@@ -8,6 +8,7 @@ problèmes connus: a date aucun
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 
 int main (void)
@@ -18,15 +19,34 @@ int main (void)
 
     printf("entrer votre commande, pour quitter entrer exit");
     char entrer[200];
+    //char commande[100];
     scanf( entrer, 200);//200 serait supposer etre la taille d entrer maximmum
+   // while (strcmp(commande,"exit") != 0)
     while (strcmp(entrer,"exit") != 0)
+
     {
+        if(entrer[0] == '.')
+        {
 
+        }
 
-        //switch
+        /*switch(commande)
+         * {
+         *      case "cd":
+         *                  int retour = chdir(parametre);
+         *                  if(retour == -1)
+         *                  {
+         *                      printf("%s",errno);
+         *                  }
+         *     case default: //lit la variable path du système puis va les parcourir
+         *                     // potentiellement avec scandir
+         *
+         *
+         * }*/
 
         printf("nouvelle commande");  //
-        scanf(entrer, "%200");
+//        scanf( " % 100 %200",commande,entrer );
+        scanf( "%200",entrer );
     }
 
     fprintf (stdout, "Bye!\n");
