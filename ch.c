@@ -88,7 +88,7 @@ void read_input(){
      *                 for(i = 0, i< sizeof listepath; i++)
      *                 {
      *                      struct dirent **namelist;
-     *                      scandir(listePath[i], namelist,Null,alphasort);
+     *                      scandir(listePath[i], namelist,NULL,alphasort);
      *
                                 for(j = 0 , j< sizeof namelist;j++)
                                 {
@@ -112,22 +112,22 @@ void read_input(){
 
 
 }
-char *parse(char *string, const char *delim)
+char **parse(char *string, const char *delim)
 {
     // inspire par
     // https://www.tutorialspoint.com/c_standard_library/c_function_strtok.htm
-    partie = strtok(string,delim);
+    char *partie = strtok(string,delim);
 
-    char **tableau[20];
+    char **tableau = malloc(20 * sizeof(char*));
 
     tableau[0] = partie;
- //   int index= sizeof (partie);
+    //   int index= sizeof (partie);
     int index= 1;
 
 
-    while(partie != Null)
+    while(partie != NULL)
     {
-        partie = strtok(Null,delim);
+        partie = strtok(NULL,delim);
         tableau[index] = partie ;
         //index = index + sizeof(partie);
         index++;
@@ -138,12 +138,21 @@ char *parse(char *string, const char *delim)
             char **echange = malloc(taille*2 );
             for (int i = 0; i <  taille ; ++i)
             {
-                echange[i] = tableau;
+                echange[i] = tableau[i];
             }
             free(tableau);
-            tableau = echange;
+            char **tableau = malloc(sizeof(echange));
+
+            for (int i = 0; i <  taille ; ++i)
+            {
+                strcpy(tableau[i],echange[i]);
+            }
+
+            free(echange);
         }
     }
+    return tableau;
+
 }
 
 void read_command (char cmd[], char *par[]){
