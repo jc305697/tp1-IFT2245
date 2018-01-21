@@ -82,6 +82,25 @@ void read_input(){
      *                  }
      *     case default: //lit la variable path du système puis va les parcourir
      *                     // potentiellement avec scandir
+     *                   char *path = getenv("PATH");
+     *                  parse path -> obtient const char *listePath -> tableau des chemins
+     *
+     *                 for(i = 0, i< sizeof listepath; i++)
+     *                 {
+     *                      struct dirent **namelist;
+     *                      scandir(listePath[i], namelist,Null,alphasort);
+     *
+                                for(j = 0 , j< sizeof namelist;j++)
+                                {
+                                    if ( strstr(namelist[j],command) != null )
+                                    {
+                                         execve(namelist[j], parameters, envp);
+                                         break;
+                                    }
+                                }
+     *
+     *                  }
+     *
      *
      *
      * }*/
@@ -92,6 +111,39 @@ void read_input(){
 
 
 
+}
+char *parse(char *string, const char *delim)
+{
+    // inspire par
+    // https://www.tutorialspoint.com/c_standard_library/c_function_strtok.htm
+    partie = strtok(string,delim);
+
+    char **tableau[20];
+
+    tableau[0] = partie;
+ //   int index= sizeof (partie);
+    int index= 1;
+
+
+    while(partie != Null)
+    {
+        partie = strtok(Null,delim);
+        tableau[index] = partie ;
+        //index = index + sizeof(partie);
+        index++;
+        if (index  >= sizeof (tableau))
+        {
+            int taille = sizeof (tableau) ;
+
+            char **echange = malloc(taille*2 );
+            for (int i = 0; i <  taille ; ++i)
+            {
+                echange[i] = tableau;
+            }
+            free(tableau);
+            tableau = echange;
+        }
+    }
 }
 
 void read_command (char cmd[], char *par[]){
