@@ -135,7 +135,7 @@ char **parse(char *string, const char *delim)
         {
             int taille = sizeof (tableau) ;
 
-            char **echange = malloc(taille*2 );
+            char **echange = malloc(taille * 2 );
             for (int i = 0; i <  taille ; ++i)
             {
                 echange[i] = tableau[i];
