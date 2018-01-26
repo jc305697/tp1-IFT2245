@@ -74,7 +74,38 @@ void read_input(){
     exit(0);
     /*switch(command)
      * {
-     *      case "cd":
+     *
+     *    char *ligneCommande = copy (command)
+     *    const char egal[2] = "=";
+     *    char **ligneSep = parse(ligneCommande,egal);
+     *    int i = 0;
+     *
+     *    while(ligneSep[i]!=NULL)
+     *    {
+     *      const char *variable;
+     *      int j = 0;
+     *      while (ligneSep[i][j] != NULL)
+     *      {
+     *          variable = ligneSep[i][j];
+     *          j = j + 1;
+     *      }
+     *
+     *      if(ligneSep[i+1]!=NULL)
+     *      {
+     *         const char *valeur = ligneSep[i+1][0];
+     *         int overwrite = 1;
+     *          int retour3 = setenv(variable,valeur,overwrite);
+     *          if (retour3 == -1)
+     *          {
+     *              printf("%s",errno);
+     *          }
+     *      }
+     *
+     *    }
+     *
+     *
+     *
+     *     case "cd":
      *                  int retour = chdir(parametre);
      *                  if(retour == -1)
      *                  {
@@ -82,25 +113,22 @@ void read_input(){
      *                  }
      *     case default: //lit la variable path du système puis va les parcourir
      *                     // potentiellement avec scandir
-     *                   char *path = getenv("PATH");
-     *                  parse path -> obtient const char *listePath -> tableau des chemins
+     *                   const char s[2] = " ";
      *
-     *                 for(i = 0, i< sizeof listepath; i++)
-     *                 {
-     *                      struct dirent **namelist;
-     *                      scandir(listePath[i], namelist,NULL,alphasort);
-     *
-                                for(j = 0 , j< sizeof namelist;j++)
-                                {
-                                    if ( strstr(namelist[j],command) != null )
-                                    {
-                                         execve(namelist[j], parameters, envp);
-                                         break;
-                                    }
-                                }
-     *
-     *                  }
-     *
+     *                   char **ligneSep = parse(ligneCommande,s);
+
+                         int retour2 = execvp(ligneSep[0],parametre);
+
+                         if(retour2 == -1)
+                         {
+                             printf("%s",errno);
+                         }
+
+
+
+
+
+
      *
      *
      * }*/
