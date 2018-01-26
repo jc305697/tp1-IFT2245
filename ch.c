@@ -75,24 +75,35 @@ void read_input(){
     /*switch(command)
      * {
      *
-     *    char *ligneCommande = copy (command)
+     *   //copie command puisque strtok modifie la string
+     *    int longueur = 0;
+     *
+     *    while(command[longueur]!=NULL)
+     *    {
+     *      longueur = longueur + 1;
+     *    }
+     *    char *ligneCommande = malloc( longueur * sizeof(char));
+     *
+     *    ligneCommande = strcpy(ligneCommande, command);
+     *
+     *      //gere les assignations de variables
      *    const char egal[2] = "=";
      *    char **ligneSep = parse(ligneCommande,egal);
-     *    int i = 0;
+     *    int mot = 0;
      *
-     *    while(ligneSep[i]!=NULL)
+     *    while(ligneSep[mot]!=NULL)
      *    {
      *      const char *variable;
-     *      int j = 0;
-     *      while (ligneSep[i][j] != NULL)
-     *      {
-     *          variable = ligneSep[i][j];
-     *          j = j + 1;
+     *      int caractere = 0;
+     *      while (ligneSep[mot][caractere] != NULL)
+     *      {//veut le dernier caractere
+     *          variable = ligneSep[mot][caractere];
+     *          caractere = caractere + 1;
      *      }
      *
-     *      if(ligneSep[i+1]!=NULL)
+     *      if(ligneSep[mot+1]!=NULL)//si on est pas au dernier mot
      *      {
-     *         const char *valeur = ligneSep[i+1][0];
+     *         const char *valeur = ligneSep[mot+1][0]; //va chercher la valeur
      *         int overwrite = 1;
      *          int retour3 = setenv(variable,valeur,overwrite);
      *          if (retour3 == -1)
@@ -103,6 +114,26 @@ void read_input(){
      *
      *    }
      *
+     *    //gere les appels aux variable avec $
+     *
+     *    const char egal[2] = "$";
+     *    free(ligneCommande);
+     *
+     *    char *ligneCommande = malloc( longueur * sizeof(char));
+     *
+     *    ligneCommande = strcpy(ligneCommande, command);
+     *
+     *    int i = 1;
+     *      const char *variable;
+     *      char *valeur;
+     *    while (ligneCommande[i] != NULL)
+     *    {
+     *         variable = ligneCommande[i][0];
+     *         valeur = getenv(variable);
+     *          //a completer probleme est remplacer la variable par sa valeur     
+     *    }
+     *
+     *
      *
      *
      *     case "cd":
@@ -111,6 +142,7 @@ void read_input(){
      *                  {
      *                      printf("%s",errno);
      *                  }
+     *                  break;
      *     case default: //lit la variable path du système puis va les parcourir
      *                     // potentiellement avec scandir
      *                   const char s[2] = " ";
@@ -123,6 +155,7 @@ void read_input(){
                          {
                              printf("%s",errno);
                          }
+                         break;
 
 
 
