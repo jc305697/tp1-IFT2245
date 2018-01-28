@@ -151,42 +151,45 @@ void read_input(){
     }
 
 
-
+    //execution(command,parameters,ligneCommande);
     //switch(command)
     //{
-        char cd[3] = "cd";
-        if( strcmp(command,cd) == 0)
+
+
+     char cd[3] = "cd";
+    if( strcmp(command,cd) == 0) //si la commande est cd
+    {
+       /* int longueur1 = 0;
+
+        while(input[longueur1]!= 0)
         {
-           /* int longueur1 = 0;
-
-            while(input[longueur1]!= 0)
-            {
-                longueur1 = longueur1 + 1;
-            }
-            const char *parametre = malloc(longueur1* sizeof(char));
-            parametre = strcpy(parametre,parameters);
-            int retour = chdir(parametre);
-            */
-            int retour = chdir(parameters);
-            if(retour == -1)
-            {
-                printf("%d",errno);
-            }
+            longueur1 = longueur1 + 1;
         }
-        else
+        const char *parametre = malloc(longueur1* sizeof(char));
+        parametre = strcpy(parametre,parameters);
+
+        int retour = chdir(parametre);
+        */
+        int retour = chdir(parameters);
+        if(retour == -1)
         {
-            //case default: //lit la variable path du système puis va les parcourir
-            // potentiellement avec scandir
-            const char s[2] = " ";
-
-            char **ligneSep = parse(ligneCommande, s);
-
-            int retour2 = execvp(ligneSep[0], parameters);
-
-            if (retour2 == -1) {
-                printf("%d", errno);
-            }
+            printf("%d",errno);
         }
+    }
+    else
+    {
+        //case default: //lit la variable path du système puis va les parcourir
+        // potentiellement avec scandir
+        const char s[2] = " ";
+
+        char **ligneSep = parse(ligneCommande, s);
+
+        int retour2 = execvp(ligneSep[0], parameters);
+
+        if (retour2 == -1) {
+            printf("%d", errno);
+        }
+    }
 
 
     exit(0);
@@ -262,3 +265,40 @@ void read_command (char cmd[], char *par[]){
     }
     par[i]= NULL;
 }
+
+/*void execution (char command, char *parameters, char *ligneCommande)
+{
+    char cd[3] = "cd";
+    if( strcmp(command,cd) == 0) //si la commande est cd
+    {
+        /* int longueur1 = 0;
+
+         while(input[longueur1]!= 0)
+         {
+             longueur1 = longueur1 + 1;
+         }
+         const char *parametre = malloc(longueur1* sizeof(char));
+         parametre = strcpy(parametre,parameters);
+         int retour = chdir(parametre);
+
+        int retour = chdir(parameters);
+        if(retour == -1)
+        {
+            printf("%d",errno);
+        }
+    }
+    else
+    {
+        //case default: //lit la variable path du système puis va les parcourir
+        // potentiellement avec scandir
+        const char s[2] = " ";
+
+        char **ligneSep = parse(ligneCommande, s);
+
+        int retour2 = execvp(ligneSep[0], parameters);
+
+        if (retour2 == -1) {
+            printf("%d", errno);
+        }
+    }
+}*/
