@@ -2,7 +2,9 @@
 auteur: Maude Sabourin et Jeremy Coulombe
 date: 20 Janvier 2018
 problèmes connus: a date aucun
+
   */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
