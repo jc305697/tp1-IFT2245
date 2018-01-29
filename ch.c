@@ -2,13 +2,17 @@
 auteur: Maude Sabourin et Jeremy Coulombe
 date: 20 Janvier 2018
 problèmes connus: a date aucun
+
   */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
+//Prend un pointeur et l'assigne dans un tableau de pointeurs
 char **parse(char *string, const char *delim)
 {
     // inspire par
@@ -52,43 +56,54 @@ char **parse(char *string, const char *delim)
 
 }
 
-void read_input(){
-    //TODO:Pour l'instant on crée les trucs dans la loop, éventuellement le créer en dehors et écraser la mémoire
-    char input[200];
-    char command[100], *parameters[200];
+//Va chercher le prochain TOKEN dans le strtok
+char* getNextValue(char *currentToken){
+    return strtok (NULL, " ");
+}
 
+//Lit ce que l'usager entre et le split selon l'espace
+char* read_input() {
+    char* input;
+    size_t taille;
+    input = (char *) malloc(200 * sizeof(char));
     //TODO: Rajouter ça si on a des problèmes de cast
     //fgets(line,sizeof(line),stdin);
     //sscanf (line, "%s", answer);
 
     //Crédit G Praveen Kumar pour le scanf avec espacement
     scanf(" %[^\n]s", input);
-    printf("input = %s\n", input);
-
+    //getline(&input,&taille,stdin);
     //Sépare chaque partie du string
-    char* split;
-    split = strtok (input, " ");
+    char *split;
+    split = strtok(input, " ");
+    return split;
+}
 
-    //TODO:Cette commande copie juste le premier char, on veut le mot
-    command[0] = split[0];
-
-    while (split != NULL){
-        //Print chaque mot pour tester
-        printf("%s\n", split);
-        split = strtok (NULL, " ");
+//Prend un pointeur et crée un array de pointeurs pour chaque mot
+char** parse_input(char *input) {
+    char **parsedArray = (char **) malloc(sizeof(char*)*BUFSIZ);
+    int i = 0;
+    while (input != NULL) {
+        parsedArray[i] = malloc(strlen(input) + 1);
+        strcpy(parsedArray[i], input);
+        input = getNextValue(input);
+        i++;
     }
+    return parsedArray;
+}
 
-    printf("test commande %s", command);
-
-
+int longueur = 0;
+//Code jérémy variables
+void manager_vars(){
+    //TODO: Trouver comment on va intégrer ce code avec le array de pointeurs plutot que des array direct
+    char command[10] = "";
+    char input[10] = "";
+    char parameters[10] = "";
     if(command[0] == '.') {
         //DO STUFF
     }
 
-
-
     //copie input puisque strtok modifie la string
-    int longueur = 0;
 
     while(input[longueur]!= 0)
     {
@@ -149,82 +164,61 @@ void read_input(){
         valeur = getenv(variable);
         //a completer probleme est remplacer la variable par sa valeur
     }
+}
 
 
-    //execution(command,parameters,ligneCommande);
-    //switch(command)
-    //{
-
-
-     char cd[3] = "cd";
-    if( strcmp(command,cd) == 0) //si la commande est cd
-    {
-       /* int longueur1 = 0;
-
-        while(input[longueur1]!= 0)
+void execution (char** arrayInput)
+{
+    if (longueur==0){
+        while(arrayInput[longueur]!= 0)
         {
-            longueur1 = longueur1 + 1;
+            longueur = longueur + 1;
         }
-        const char *parametre = malloc(longueur1* sizeof(char));
-        parametre = strcpy(parametre,parameters);
+    }
+    //const char *parametre = malloc(longueur* sizeof(char));
+    //TODO: Envoyer tous les parametres pas juste le premier
+    char* temp[100];
+    for (int i = 1; i<sizeof(arrayInput);i++){
+        temp[i-1] = arrayInput[i];
+    }
 
-        int retour = chdir(parametre);
-        */
-        int retour = chdir(parameters);
+    char cd[3] = "cd";
+    if( strcmp(arrayInput[0],cd) == 0){
+        //cd n'a qu'un seul argument
+        int retour = chdir(temp[0]);
         if(retour == -1)
         {
             printf("%d",errno);
         }
-    }
-    else
-    {
-        //case default: //lit la variable path du système puis va les parcourir
-        // potentiellement avec scandir
-        const char s[2] = " ";
+    } else {
+        int value_returned;
+        if (temp[0] != NULL){
+            value_returned = execvp(arrayInput[0], temp);
+        }else{
+            printf("hello");
+            value_returned = execlp(arrayInput[0],arrayInput[0],0);
+        }
 
+        /*
+        const char s[2] = " ";
         char **ligneSep = parse(ligneCommande, s);
 
         int retour2 = execvp(ligneSep[0], parameters);
-
-        if (retour2 == -1) {
+        */
+        if (value_returned == -1) {
             printf("%d", errno);
         }
     }
-
-
-    exit(0);
-
-    // printf("nouvelle commande");
-    //scanf( " % 100 %200",command, input );
-    // scanf( "%200",command );
-
-
-
 }
 
 
-
-int main (void)
-{
-    printf ("Mini-Shell > ");
+int main(void) {
+    printf("Mini-Shell > ");
     char input[200];
-    char path[100], command[100], *parameters[200];
-
-    //Éventuellement, aller chercher dans tout le path avec scanf p-e
-    char *envp[] = {(char *) "PATH=/bin",0};
-    //    char *envp[] = {getenv("PATH"),0};
-    while (strcmp(input,"exit") != 0){
-        read_input();
-
-        parameters[1]=NULL;
-        //Copie le /bin/ dans path
-        strcpy (path, "/bin/");
-
-        //Concatène le chemin à la commande, par exemple /bin/ls
-        strcat (path, command);
-        //Exécute la commande
-        execve(path, parameters, envp);
-        //execvp(command,parameters);
+    while (strcmp(input, "exit") != 0) {
+        char *result = read_input();
+        char **parsed_array = parse_input(result);
+        execution (parsed_array);
 
 
         //if(fork() != 0){
@@ -232,73 +226,34 @@ int main (void)
         //} else{
         //}
     }
-    fprintf (stdout, "Bye!\n");
-    exit (0);
+    fprintf(stdout, "Bye!\n");
+    exit(0);
 }
 
 
-
-
-void read_command (char cmd[], char *par[]){
+void read_command(char cmd[], char *par[]) {
     char line[1024];
-    int count =0, i=0, j=0;
+    int count = 0, i = 0, j = 0;
     char *array[100], *pch;
 
-    for (;;){
-        int c = fgetc (stdin);
+    for (;;) {
+        int c = fgetc(stdin);
         line[count++] = (char) c;
-        if (c=='\n') break;
+        if (c == '\n') break;
     }
-    if (count==1) return;
-    pch= strtok (line, " \n");
+    if (count == 1) return;
+    pch = strtok(line, " \n");
 
-    while (pch!=NULL){
-        array[i++] = strdup (pch);
-        pch = strtok (NULL, " \n");
+    while (pch != NULL) {
+        array[i++] = strdup(pch);
+        pch = strtok(NULL, " \n");
     }
     //commande
-    strcpy (cmd, array[0]);
+    strcpy(cmd, array[0]);
 
     //param
-    for (j;j<i;j++){
+    for (j; j < i; j++) {
         par[j] = array[j];
     }
-    par[i]= NULL;
+    par[i] = NULL;
 }
-
-/*void execution (char command, char *parameters, char *ligneCommande)
-{
-    char cd[3] = "cd";
-    if( strcmp(command,cd) == 0) //si la commande est cd
-    {
-        /* int longueur1 = 0;
-
-         while(input[longueur1]!= 0)
-         {
-             longueur1 = longueur1 + 1;
-         }
-         const char *parametre = malloc(longueur1* sizeof(char));
-         parametre = strcpy(parametre,parameters);
-         int retour = chdir(parametre);
-
-        int retour = chdir(parameters);
-        if(retour == -1)
-        {
-            printf("%d",errno);
-        }
-    }
-    else
-    {
-        //case default: //lit la variable path du système puis va les parcourir
-        // potentiellement avec scandir
-        const char s[2] = " ";
-
-        char **ligneSep = parse(ligneCommande, s);
-
-        int retour2 = execvp(ligneSep[0], parameters);
-
-        if (retour2 == -1) {
-            printf("%d", errno);
-        }
-    }
-}*/
