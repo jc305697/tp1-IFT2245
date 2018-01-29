@@ -13,11 +13,12 @@ problèmes connus: a date aucun
 #include <stdbool.h>
 
 //Prend un pointeur et l'assigne dans un tableau de pointeurs
-char **parse(char *string, const char *delim)
+char **parse(char **string, const char *delim)
 {
     // inspire par
     // https://www.tutorialspoint.com/c_standard_library/c_function_strtok.htm
-    char *partie = strtok(string,delim);
+    //TODO: VERIFIER SI MARCHE AVEC STRING CHAR**
+    char *partie = strtok(string[0],delim);
 
     char **tableau = malloc(20 * sizeof(char*));
 
@@ -92,31 +93,14 @@ char** parse_input(char *input) {
     return parsedArray;
 }
 
+
 int longueur = 0;
 //Code jérémy variables
-void manager_vars(){
-    //TODO: Trouver comment on va intégrer ce code avec le array de pointeurs plutot que des array direct
-    char command[10] = "";
-    char input[10] = "";
-    char parameters[10] = "";
-    if(command[0] == '.') {
-        //DO STUFF
-    }
-
-    //copie input puisque strtok modifie la string
-
-    while(input[longueur]!= 0)
-    {
-        longueur = longueur + 1;
-    }
-
-    char *ligneCommande = malloc( longueur * sizeof(char));
-
-    ligneCommande = strcpy(ligneCommande, input);
-
+/*
+void manager_vars(char** parsedArray,char** parameters){
     //gere les assignations de variables
     const char egal[2] = "=";
-    char **ligneSep = parse(ligneCommande,egal);
+    char **ligneSep = parse(parsedArray,egal);
     int mot = 0;
 
     while(ligneSep[mot]!=NULL)
@@ -162,25 +146,41 @@ void manager_vars(){
     {
         variable = &ligneCommSep[i][0];
         valeur = getenv(variable);
-        //a completer probleme est remplacer la variable par sa valeur
+        //TODO:a completer probleme est remplacer la variable par sa valeur
     }
 }
-
-
-void execution (char** arrayInput)
-{
+*/
+char** getParameters(char** arrayInput){
     if (longueur==0){
         while(arrayInput[longueur]!= 0)
         {
             longueur = longueur + 1;
         }
     }
-    //const char *parametre = malloc(longueur* sizeof(char));
-    //TODO: Envoyer tous les parametres pas juste le premier
-    char* temp[100];
-    for (int i = 1; i<sizeof(arrayInput);i++){
-        temp[i-1] = arrayInput[i];
+
+    int i = 0;
+    while(arrayInput[i]!=NULL){
+        i++;
     }
+
+    const char ch = '=';
+    if (i<=1){
+        char* ret = strchr(arrayInput[0],ch);
+
+        if (ret!=NULL){
+            //manager_vars();
+        }
+    }
+    char **temp = (char **) malloc(sizeof(char*)*BUFSIZ);
+
+    for (int i = 0; i<sizeof(arrayInput);i++){
+        temp[i] = arrayInput[i];
+    }
+    return temp;
+}
+
+void execution (char** arrayInput, char** temp)
+{
 
     char cd[3] = "cd";
     if( strcmp(arrayInput[0],cd) == 0){
@@ -189,13 +189,15 @@ void execution (char** arrayInput)
         if(retour == -1)
         {
             printf("%d",errno);
+            printf("%s",strerror(errno));
         }
     } else {
         int value_returned;
         if (temp[0] != NULL){
-            value_returned = execvp(arrayInput[0], temp);
+            //Pour ls et cat et compagnie
+            value_returned = execvp(arrayInput[0],temp);
         }else{
-            printf("hello");
+            //Pour les déclarations de variables
             value_returned = execlp(arrayInput[0],arrayInput[0],0);
         }
 
@@ -206,6 +208,7 @@ void execution (char** arrayInput)
         int retour2 = execvp(ligneSep[0], parameters);
         */
         if (value_returned == -1) {
+            printf("wtf");
             printf("%d", errno);
         }
     }
@@ -217,9 +220,10 @@ int main(void) {
     char input[200];
     while (strcmp(input, "exit") != 0) {
         char *result = read_input();
-        char **parsed_array = parse_input(result);
-        execution (parsed_array);
-
+        printf(result);
+        char **command = parse_input(result);
+        char **parameters = getParameters (command);
+        execution(command,parameters);
 
         //if(fork() != 0){
         //wait(NULL);
