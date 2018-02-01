@@ -233,32 +233,108 @@ void lireLigne(char **command, char **parameters)
         if(command[0][i] == '=')//si assignation en premier
         {
             passer = true;
+
+            char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
+
             char *variable;
-            variable = strtok(command[0], "=");
+
+            copie = strcpy(copie,command[0]);
+
+            variable = strtok(copie, "=");
+
             printf("variable = %s\n",variable);
+
             char *valeur;
+
             valeur = strtok(NULL,"="); // va chercher la premiere partie
+
             printf("valeur = %s\n",valeur);//va chercher la seconde partie
+
             int overwrite = 1;
+
             setenv(variable,valeur,overwrite);
 
             printf("valeur de variable, %s\n",getenv(variable));
+
             break;
+        }
+        else if( command[0][i] == '$')
+        {
+            /*char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
+
+            char *variable; //devrait remplacer la variable et le $ par valeur
+
+            copie = strcpy(copie,command[0]);*/
+
+            /*char *valeur;
+            valeur = getenv(&command[0][i+1]);
+            printf("valeur = %s\n",valeur);
+            passer =true;*/
+            passer = true;
+            char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
+
+            char *variable; //devrait remplacer la variable et le $ par valeur
+
+            if(i!=0) {
+                copie = strncpy(copie, command[0], i - 1);
+                //copie tout ce qui est dans le string avant le $
+            }
+            char *valeur;
+            valeur = getenv(&command[0][i+1]);
+
+            printf("valeur = %s\n",valeur);
+            command[0] = strcpy(&copie[i],valeur);
+
         }
         i++;
     }
+
     if (passer == false)//si ce n'etait pas une assignation donc = commande
     {
         execution(command,parameters);
     }
+
+
+    int mot = 1;
+
+    while (command[mot] != 0)
+    {
+        int lettre = 0;
+        while(command[mot][lettre])
+        {
+            if( command[mot][lettre] == '$')
+            {
+
+                char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
+
+               char *variable; //devrait remplacer la variable et le $ par valeur
+                if (lettre!= 0) {
+                    copie = strncpy(copie, command[mot], lettre - 1);
+                    //copie tout ce qui est dans le string avant le $
+                }
+
+                char *valeur;
+                valeur = getenv(&command[mot][lettre+1]);
+
+                printf("valeur = %s\n",valeur);
+                command[mot] = strcpy(&copie[lettre],valeur);
+
+
+            }
+            lettre++;
+        }
+        mot++;
+    }
+
 
 }
 
 int main(void) {
     printf("Mini-Shell > ");
     char input[200];
+    setenv("i","1",1);//pour tester si marche avec $ TODO: enlever le test
     while (strcmp(input, "exit") != 0) {
-        char *result = read_input();
+        char *result = read_input(); 
         printf("result = %s \n",result);
         char **command = parse_input(result);
 
