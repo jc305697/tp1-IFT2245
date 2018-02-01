@@ -73,7 +73,7 @@ char* read_input() {
 
     //Crédit G Praveen Kumar pour le scanf avec espacement
     scanf(" %[^\n]s", input);
-    //getline(&input,&taille,stdin);
+    //getline(&input,&taille,stdin);//TODO: remplacer scanf par getline
     //Sépare chaque partie du string
     char *split;
     split = strtok(input, " ");
@@ -214,16 +214,58 @@ void execution (char** arrayInput, char** temp)
     }
 }
 
+void lireLigne(char **command, char **parameters)
+{
+    bool passer = false;
+    int i = 0;
+    const char *pour = "for";
+    //pour = malloc(4 * sizeof(char));
+  //  pour[0] = 'f';
+    if (strstr(command[0], pour)!= NULL)
+    {
+        //faire gestion si commande est un for
+    }
+
+
+
+    while(command[0][i]!= 0)
+    {
+        if(command[0][i] == '=')//si assignation en premier
+        {
+            passer = true;
+            char *variable;
+            variable = strtok(command[0], "=");
+            printf("variable = %s\n",variable);
+            char *valeur;
+            valeur = strtok(NULL,"="); // va chercher la premiere partie
+            printf("valeur = %s\n",valeur);//va chercher la seconde partie
+            int overwrite = 1;
+            setenv(variable,valeur,overwrite);
+
+            printf("valeur de variable, %s\n",getenv(variable));
+            break;
+        }
+        i++;
+    }
+    if (passer == false)//si ce n'etait pas une assignation donc = commande
+    {
+        execution(command,parameters);
+    }
+
+}
 
 int main(void) {
     printf("Mini-Shell > ");
     char input[200];
     while (strcmp(input, "exit") != 0) {
         char *result = read_input();
-        printf(result);
+        printf("result = %s \n",result);
         char **command = parse_input(result);
+
         char **parameters = getParameters (command);
-        execution(command,parameters);
+        lireLigne(command,parameters);
+        //execution(command,parameters);
+        exit(0); //TODO: enlever pour faire une boucle
 
         //if(fork() != 0){
         //wait(NULL);
@@ -233,6 +275,9 @@ int main(void) {
     fprintf(stdout, "Bye!\n");
     exit(0);
 }
+
+
+
 
 
 void read_command(char cmd[], char *par[]) {
