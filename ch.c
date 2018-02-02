@@ -179,48 +179,8 @@ char** getParameters(char** arrayInput){
     return temp;
 }
 
-void execution (char** arrayInput, char** temp)
-{
-
-    char cd[3] = "cd";
-    if( strcmp(arrayInput[0],cd) == 0){
-        //cd n'a qu'un seul argument
-        int retour = chdir(temp[0]);
-        if(retour == -1)
-        {
-            printf("%d",errno);
-            printf("%s",strerror(errno));
-        }
-    } else {
-        int value_returned;
-        if (temp[0] != NULL){
-            //Pour ls et cat et compagnie
-            value_returned = execvp(arrayInput[0],temp);
-        }else{
-            //Pour les déclarations de variables
-            value_returned = execlp(arrayInput[0],arrayInput[0],0);
-        }
-
-        /*
-        const char s[2] = " ";
-        char **ligneSep = parse(ligneCommande, s);
-
-        int retour2 = execvp(ligneSep[0], parameters);
-        */
-        if (value_returned == -1) {
-            printf("wtf");
-            printf("%d", errno);
-        }
-    }
-}
-
-void faireForVariable(char **command, char **parameters, char *input, char *commandesFor,char *variable)
-{
-
-}
-
-void lireVariable (char **command, char **parameters, char *input)
-{
+void remplaceVariable (char **command)
+{ //lit la ligne de commande et remplace les variables identifier par $
     int mot = 0;
 
     int lettre;
@@ -257,25 +217,120 @@ void lireVariable (char **command, char **parameters, char *input)
     }
 }
 
-//void lireLigne(char **command, char **parameters, char *input)
-void lireLigne(char **command,  char *input)
+void execution (char** arrayInput, char** temp)
+{
 
+    char cd[3] = "cd";
+    if( strcmp(arrayInput[0],cd) == 0){
+        //cd n'a qu'un seul argument
+        int retour = chdir(temp[0]);
+        if(retour == -1)
+        {
+            printf("%d",errno);
+            printf("erreur 1 =%s",strerror(errno));
+        }
+    } else {
+        int value_returned;
+        if (temp[0] != NULL){
+            //Pour ls et cat et compagnie
+            value_returned = execvp(arrayInput[0],temp);
+        }else{
+            //Pour les déclarations de variables
+            value_returned = execlp(arrayInput[0],arrayInput[0],0);
+        }
+
+        /*
+        const char s[2] = " ";
+        char **ligneSep = parse(ligneCommande, s);
+
+        int retour2 = execvp(ligneSep[0], parameters);
+        */
+        if (value_returned == -1) {
+            //printf("wtf");
+            printf("erreur 2 = %s",strerror(errno));
+
+        }
+    }
+}
+
+
+void lireLigne(char **command,  char *input)
 {
     bool passer = false;
     int i = 0;
     const char *pour = "for";
     //pour = malloc(4 * sizeof(char));
-  //  pour[0] = 'f';
+    //  pour[0] = 'f';
+    char **parameters = getParameters (command);
     if (strstr(command[0], pour)!= NULL)
     {
 
-       // lireFor(command, parameters, input);
+        char *variable = command[1];
+
+        if (strcmp(command[2], "in") != 0) {
+            printf("for mal former veuiller consulter la documentation");
+        }
+
+
+        int posPointVirg = 2;
+
+        while (strcmp(command[posPointVirg], ";") != 0)// tant que je suis pas ariver au ;
+        {
+            posPointVirg++;
+        }
+
+        if (strcmp(command[posPointVirg + 1], "do") != 0) {
+            printf("for mal former veuiller consulter la documentation");
+
+        }
+
+        char *commandesFor = strstr(input, "do") + 2;
+        //je veux que ca pointe vers le debut des commande
+
+
+
+        char *copy = malloc(strlen(input) * sizeof(char));
+
+        copy = strcpy(copy, commandesFor);
+
+        int i = 3;
+        int overwrite = 1;
+        while (i < posPointVirg) {
+            setenv(variable, command[i], overwrite);
+            char *commandeNonParse;//c'est la commande qui est parse par rapport au ;
+            const char pointVirgule[2] = ";";
+            commandeNonParse =  strtok(commandesFor,pointVirgule);
+
+            char **commandParse = parse_input(commandeNonParse);
+
+
+
+            while (commandeNonParse != NULL)
+            {
+                lireLigne(commandParse,commandeNonParse);
+
+                commandeNonParse = strtok(NULL,pointVirgule);
+
+                if (commandeNonParse != NULL)
+                {
+                    commandParse = parse_input(commandeNonParse);
+
+                    //parameters1 = getParameters (command1);
+                    //lireLigne(command1,parameters1,commande);
+                    //lireLigne(commandParse,commandeNonParse);
+
+                }
+            }
+            i++;
+        }
+
+        free(copy);
 
     }
 
 
-    char **parameters = getParameters (command);
-    lireVariable(command,parameters,input);
+
+    remplaceVariable(command); //
 
 
     while(command[0][i]!= 0)
@@ -309,36 +364,6 @@ void lireLigne(char **command,  char *input)
             break;
         }
 
-
-       /* else if( command[0][i] == '$')
-        {
-            /*char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
-
-            char *variable; //devrait remplacer la variable et le $ par valeur
-
-            copie = strcpy(copie,command[0]); //
-
-            /*char *valeur;
-            valeur = getenv(&command[0][i+1]);
-            printf("valeur = %s\n",valeur);
-            passer =true; //
-            passer = true;
-            char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
-
-
-            char *variable; //devrait remplacer la variable et le $ par valeur
-
-            if(i!=0) {
-                copie = strncpy(copie, command[0], i - 1);
-                //copie tout ce qui est dans le string avant le $
-            }
-            char *valeur;
-            valeur = getenv(&command[0][i+1]);
-
-            printf("valeur = %s\n",valeur);
-            command[0] = strcpy(&copie[i],valeur);
-
-        }*/
         i++;
     }
 
@@ -361,7 +386,7 @@ void lireLigne(char **command,  char *input)
 
                 char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
 
-               char *variable; //devrait remplacer la variable et le $ par valeur
+                char *variable; //devrait remplacer la variable et le $ par valeur
                 if (lettre!= 0) {
                     copie = strncpy(copie, command[mot], lettre - 1);
                     //copie tout ce qui est dans le string avant le $
@@ -383,65 +408,7 @@ void lireLigne(char **command,  char *input)
 
 }
 
-void lireFor (char **command, char **parameters, char *input)
-{
-    //faire gestion si commande est un for
-    char *variable = command[1];
 
-    if(strcmp(command[2], "in")!= 0)
-    {
-        printf("for mal former veuiller consulter la documentation");
-    }
-
-    int j = 2;
-
-    while(strcmp(command[j],";") != 0)// tant que je suis pas ariver au ;
-    {
-        j++;
-    }
-
-
-
-    char *commandesFor = strstr(input,"do") + 2;
-    //je veux que ca pointe vers le debut des commande
-
-    char *copy = malloc( strlen(input) * sizeof(char));
-
-    copy = strcpy(copy,commandesFor);
-    char *commande;
-    const char pointVirgule[2] = "s";
-    commande =  strtok(commandesFor,pointVirgule);
-
-    char **command1 = parse_input(commande);
-
-   // char **parameters1 = getParameters (command1);
-    //lireLigne(command1,parameters1,commande);
-    lireLigne(command1,commande);
-
-    while (commande != NULL)
-    {
-        commande = strtok(NULL,pointVirgule);
-        if (commande != NULL)
-        {
-            command1 = parse_input(commande);
-
-            //parameters1 = getParameters (command1);
-            //lireLigne(command1,parameters1,commande);
-            lireLigne(command1,commande);
-
-        }
-    }
-
-
-
-
-    if(strcmp(command[j + 1 ], "do")!= 0)
-    {
-        printf("for mal former veuiller consulter la documentation");
-    }
-
-
-}
 
 int main(void) {
     printf("Mini-Shell > ");
@@ -467,11 +434,46 @@ int main(void) {
     exit(0);
 }
 
+/* void lireFor (char **command, char **parameters, char *input) {
+    //faire gestion si commande est un for
+
+}*/
+
+    /* char *commandeNonParse;//c'est la commande qui est parse par rapport au ;
+    const char pointVirgule[2] = ";";
+    commandeNonParse =  strtok(commandesFor,pointVirgule);
+
+    char **commandParse = parse_input(commandeNonParse);*/
+    //commandParse est la command qui a ete separer par rapport aux espaces
+
+    // char **parameters1 = getParameters (command1);
+    //lireLigne(command1,parameters1,commande);
+
+    /*
+    lireLigne(commandParse,commandeNonParse);
+
+    while (commandeNonParse != NULL)
+    {
+        commandeNonParse = strtok(NULL,pointVirgule);
+        if (commandeNonParse != NULL)
+        {
+            commandParse = parse_input(commandeNonParse);
+
+            //parameters1 = getParameters (command1);
+            //lireLigne(command1,parameters1,commande);
+            lireLigne(commandParse,commandeNonParse);
+        }
+    }*/
+
+//void lireLigne(char **command, char **parameters, char *input)
 
 
 
 
-void read_command(char cmd[], char *par[]) {
+
+
+
+/*void read_command(char cmd[], char *par[]) {
     char line[1024];
     int count = 0, i = 0, j = 0;
     char *array[100], *pch;
@@ -496,4 +498,4 @@ void read_command(char cmd[], char *par[]) {
         par[j] = array[j];
     }
     par[i] = NULL;
-}
+}*/
