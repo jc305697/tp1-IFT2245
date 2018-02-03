@@ -11,51 +11,9 @@ problèmes connus: a date aucun
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
-
-//Prend un pointeur et l'assigne dans un tableau de pointeurs
-char **parse(char **string, const char *delim)
-{
-    // inspire par
-    // https://www.tutorialspoint.com/c_standard_library/c_function_strtok.htm
-    //TODO: VERIFIER SI MARCHE AVEC STRING CHAR**
-    char *partie = strtok(string[0],delim);
-
-    char **tableau = malloc(20 * sizeof(char*));
-
-    tableau[0] = partie;
-    //   int index= sizeof (partie);
-    int index= 1;
-
-
-    while(partie != NULL)
-    {
-        partie = strtok(NULL,delim);
-        tableau[index] = partie ;
-        //index = index + sizeof(partie);
-        index++;
-        if (index  >= sizeof (tableau))
-        {
-            int taille = sizeof (tableau) ;
-
-            char **echange = malloc(taille * 2 );
-            for (int i = 0; i <  taille ; ++i)
-            {
-                echange[i] = tableau[i];
-            }
-            free(tableau);
-            char **tableau = malloc(sizeof(echange));
-
-            for (int i = 0; i <  taille ; ++i)
-            {
-                strcpy(tableau[i],echange[i]);
-            }
-
-            free(echange);
-        }
-    }
-    return tableau;
-
-}
+#include <ctype.h>
+#include <stdbool.h>
+#include <sys/wait.h>
 
 //Va chercher le prochain TOKEN dans le strtok
 char* getNextValue(char *currentToken){
@@ -227,7 +185,7 @@ void execution (char** arrayInput, char** temp)
         if(retour == -1)
         {
             printf("%d",errno);
-            printf("erreur 1 =%s",strerror(errno));
+            printf("erreur 1 = %s",strerror(errno));
         }
     } else {
         int value_returned;
@@ -239,136 +197,110 @@ void execution (char** arrayInput, char** temp)
             value_returned = execlp(arrayInput[0],arrayInput[0],0);
         }
 
-        /*
-        const char s[2] = " ";
-        char **ligneSep = parse(ligneCommande, s);
-
-        int retour2 = execvp(ligneSep[0], parameters);
-        */
         if (value_returned == -1) {
-            //printf("wtf");
             printf("erreur 2 = %s",strerror(errno));
 
         }
     }
 }
 
+struct Return {
+    bool format;
+    int posPointVirg;
+};
 
-void lireLigne(char **command,  char *input)
-{
+struct Return checkFor(char **command){
+    char *variable = command[1];
+    struct Return return1 = {false,0};
+
+    if (!(isalpha(*variable))){
+        printf("For badly made, a variable is necessary");
+        return return1;
+    }
+
+    if (strcmp(command[2], "in") != 0) {
+        printf("For badly made, need the format For x in range;Do ...; Done;");
+        return return1;
+    }
+
+    int posPointVirg = 2;
+
+    //Loop until reach the first ;
+    while (strcmp(command[posPointVirg], ";") != 0){
+        posPointVirg++;
+    }
+
+    if (strcmp(command[posPointVirg + 1], "do") != 0) {
+        printf("For badly made, need the format For x in range;Do ...; Done;");
+        return return1;
+    }
+    struct Return return2 = {true, posPointVirg};
+    return return2;
+}
+
+
+void lireLigne(char **command,  char *input) {
     bool passer = false;
     int i = 0;
     const char *pour = "for";
-    //pour = malloc(4 * sizeof(char));
-    //  pour[0] = 'f';
-    char **parameters = getParameters (command);
-    if (strstr(command[0], pour)!= NULL)
-    {
 
-        char *variable = command[1];
+    //Check if "for" is the command
+    if (strstr(command[0], pour)!= NULL) {
+        //Check if for is well made
+        struct Return rtn = checkFor(command);
+        if (rtn.format){
+            char *variable = command[1];
+            //Point towards the body of the for
+            char *commandesFor = strstr(input, "do") + 2;
+            char *copy = malloc(strlen(input) * sizeof(char));
+            copy = strcpy(copy, commandesFor);
+            i = 3;
+            int overwrite = 1;
+            while (i < rtn.posPointVirg) {
+                setenv(variable, command[i], overwrite);
+                char *commandeNonParse;//c'est la commande qui est parse par rapport au ;
+                const char pointVirgule[2] = ";";
+                commandeNonParse =  strtok(commandesFor,pointVirgule);
 
-        if (strcmp(command[2], "in") != 0) {
-            printf("for mal former veuiller consulter la documentation");
-        }
-
-
-        int posPointVirg = 2;
-
-        while (strcmp(command[posPointVirg], ";") != 0)// tant que je suis pas ariver au ;
-        {
-            posPointVirg++;
-        }
-
-        if (strcmp(command[posPointVirg + 1], "do") != 0) {
-            printf("for mal former veuiller consulter la documentation");
-
-        }
-
-        char *commandesFor = strstr(input, "do") + 2;
-        //je veux que ca pointe vers le debut des commande
-
-
-
-        char *copy = malloc(strlen(input) * sizeof(char));
-
-        copy = strcpy(copy, commandesFor);
-
-        int i = 3;
-        int overwrite = 1;
-        while (i < posPointVirg) {
-            setenv(variable, command[i], overwrite);
-            char *commandeNonParse;//c'est la commande qui est parse par rapport au ;
-            const char pointVirgule[2] = ";";
-            commandeNonParse =  strtok(commandesFor,pointVirgule);
-
-            char **commandParse = parse_input(commandeNonParse);
-
-
-
-            while (commandeNonParse != NULL)
-            {
-                lireLigne(commandParse,commandeNonParse);
-
-                commandeNonParse = strtok(NULL,pointVirgule);
-
-                if (commandeNonParse != NULL)
-                {
-                    commandParse = parse_input(commandeNonParse);
-
-                    //parameters1 = getParameters (command1);
-                    //lireLigne(command1,parameters1,commande);
-                    //lireLigne(commandParse,commandeNonParse);
-
+                char **commandParse = parse_input(commandeNonParse);
+                while (commandeNonParse != NULL) {
+                    lireLigne(commandParse,commandeNonParse);
+                    commandeNonParse = strtok(NULL,pointVirgule);
+                    if (commandeNonParse != NULL) {
+                        commandParse = parse_input(commandeNonParse);
+                        //parameters1 = getParameters (command1);
+                        //lireLigne(command1,parameters1,commande);
+                        //lireLigne(commandParse,commandeNonParse);
+                    }
                 }
+                i++;
             }
-            i++;
+            free(copy);
         }
-
-        free(copy);
-
     }
 
+    remplaceVariable(command);
 
-
-    remplaceVariable(command); //
-
-
-    while(command[0][i]!= 0)
-    {
-        if(command[0][i] == '=')//si assignation en premier
-        {
+    while(command[0][i]!= 0) {
+        if(command[0][i] == '='){//si assignation en premier
             passer = true;
-
             char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
-
             char *variable;
-
             copie = strcpy(copie,command[0]);
-
             variable = strtok(copie, "=");
-
             printf("variable = %s\n",variable);
-
             char *valeur;
-
             valeur = strtok(NULL,"="); // va chercher la premiere partie
-
             printf("valeur = %s\n",valeur);//va chercher la seconde partie
-
             int overwrite = 1;
-
             setenv(variable,valeur,overwrite);
-
             printf("valeur de variable, %s\n",getenv(variable));
-
             break;
         }
-
         i++;
     }
 
-    if (passer == false)//si ce n'etait pas une assignation donc = commande
-    {
+    if (passer == false){//si ce n'etait pas une assignation donc = commande
         char **parameters = getParameters (command);
         execution(command,parameters);
     }
@@ -376,36 +308,25 @@ void lireLigne(char **command,  char *input)
 
     int mot = 1;
 
-    while (command[mot] != 0)
-    {
+    while (command[mot] != 0) {
         int lettre = 0;
-        while(command[mot][lettre])
-        {
-            if( command[mot][lettre] == '$')
-            {
-
+        while(command[mot][lettre]) {
+            if( command[mot][lettre] == '$') {
                 char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
-
                 char *variable; //devrait remplacer la variable et le $ par valeur
                 if (lettre!= 0) {
                     copie = strncpy(copie, command[mot], lettre - 1);
                     //copie tout ce qui est dans le string avant le $
                 }
-
                 char *valeur;
                 valeur = getenv(&command[mot][lettre+1]);
-
                 printf("valeur = %s\n",valeur);
                 command[mot] = strcpy(&copie[lettre],valeur);
-
-
             }
             lettre++;
         }
         mot++;
     }
-
-
 }
 
 
@@ -415,25 +336,65 @@ int main(void) {
     char input[200];
     setenv("i","1",1);//pour tester si marche avec $ TODO: enlever le test
     while (strcmp(input, "exit") != 0) {
-        char *result = read_input();
-        //printf("result = %s \n",result);
-        char **command = parse_input(result);
-
-        char **parameters = getParameters (command);
-        //lireLigne(command,parameters,input);
-        lireLigne(command,input);
-        //execution(command,parameters);
-        exit(0); //TODO: enlever pour faire une boucle
-
-        //if(fork() != 0){
-        //wait(NULL);
-        //} else{
-        //}
+        if(fork() != 0){
+            wait(NULL);
+        } else{
+            char *result = read_input();
+            char **command = parse_input(result);
+            //char **parameters = getParameters (command);
+            lireLigne(command,input);
+            printf("\n Mini-Shell > ");
+        }
     }
     fprintf(stdout, "Bye!\n");
     exit(0);
 }
 
+
+//Prend un pointeur et l'assigne dans un tableau de pointeurs
+char **parse(char **string, const char *delim)
+{
+    // inspire par
+    // https://www.tutorialspoint.com/c_standard_library/c_function_strtok.htm
+    //TODO: VERIFIER SI MARCHE AVEC STRING CHAR**
+    char *partie = strtok(string[0],delim);
+
+    char **tableau = malloc(20 * sizeof(char*));
+
+    tableau[0] = partie;
+    //   int index= sizeof (partie);
+    int index= 1;
+
+
+    while(partie != NULL)
+    {
+        partie = strtok(NULL,delim);
+        tableau[index] = partie ;
+        //index = index + sizeof(partie);
+        index++;
+        if (index  >= sizeof (tableau))
+        {
+            int taille = sizeof (tableau) ;
+
+            char **echange = malloc(taille * 2 );
+            for (int i = 0; i <  taille ; ++i)
+            {
+                echange[i] = tableau[i];
+            }
+            free(tableau);
+            char **tableau = malloc(sizeof(echange));
+
+            for (int i = 0; i <  taille ; ++i)
+            {
+                strcpy(tableau[i],echange[i]);
+            }
+
+            free(echange);
+        }
+    }
+    return tableau;
+
+}
 /* void lireFor (char **command, char **parameters, char *input) {
     //faire gestion si commande est un for
 
