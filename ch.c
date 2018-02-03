@@ -178,32 +178,31 @@ struct Return checkFor(char **command){
     return return2;
 }
 
+bool instructionDone(char** command, int start){
+    if (strcmp(command[start], "done") != 0){
+        return false;
+    }
+    return true;
+}
+
 int runFor(char **command, int pos){
     //TODO: Rajouter un autre while pour chaque instruction
     char *variable = command[1];
-    int start = pos+2;
-    //Point towards the body of the for (starts at the first ; and skip the do)
-    char *commandesDo = command[start];
+    int start;
     int i = 3;
     int overwrite = 1;
-    int end =  findNextSplit(start, command);
+    int end;
+    //Boucle pour le range de i
     while (i < pos) {
+        start = pos+2;
         setenv(variable, command[i], overwrite);
-        char *commandeNonParse =  strtok(commandesDo,";");
-        char **commandParse = parse_input(commandeNonParse);
-        //printf("%s",commandeNonParse);
-        //printf("%s",commandParse[1]);
-        while (commandeNonParse != NULL) {
-            remplaceVariable(commandParse);
+        //Boucle pour toutes les exécutions séparée par un ;
+        while(!instructionDone(command,start)){
+            end = findNextSplit(start, command);
+            remplaceVariable(command);
             char **parameters = getParameters (command, start, end);
-            execution(commandParse,parameters);
-            commandeNonParse = strtok(NULL,";");
-            if (commandeNonParse != NULL) {
-                commandParse = parse_input(commandeNonParse);
-                //parameters1 = getParameters (command1);
-                //lireLigne(command1,parameters1,commande);
-                //lireLigne(commandParse,commandeNonParse);
-            }
+            execution(parameters,parameters);
+            start = end+1;
         }
         i++;
     }
@@ -234,24 +233,25 @@ void lireLigne(char **command,  char *input) {
         }else{
             return;
         }
-    }
+    }else{
 
-    //Lit la ligne et remplace les $ par leur valeur
-    remplaceVariable(command);
+        //Lit la ligne et remplace les $ par leur valeur
+        remplaceVariable(command);
 
-    //Vérifie si la ligne est une assignation
-    while(command[0][i]!= 0) {
-        if(command[0][i] == '='){//si assignation en premier
-            runAssignation(command);
-            passer=true;
+        //Vérifie si la ligne est une assignation
+        while(command[0][i]!= 0) {
+            if(command[0][i] == '='){//si assignation en premier
+                runAssignation(command);
+                passer=true;
+            }
+            i++;
         }
-        i++;
-    }
 
-    //On a une commande
-    if (passer == false){
-        char **parameters = getParameters (command, 0, sizeof(command));
-        execution(command,parameters);
+        //On a une commande
+        if (passer == false){
+            char **parameters = getParameters (command, 0, sizeof(command));
+            execution(command,parameters);
+        }
     }
 }
 
