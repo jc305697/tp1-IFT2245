@@ -23,11 +23,7 @@ char* getNextValue(char *currentToken){
 //Lit ce que l'usager entre et le split selon l'espace
 char* read_input() {
     char* input;
-    size_t taille;
     input = (char *) malloc(200 * sizeof(char));
-    //TODO: Rajouter ça si on a des problèmes de cast
-    //fgets(line,sizeof(line),stdin);
-    //sscanf (line, "%s", answer);
 
     //Crédit G Praveen Kumar pour le scanf avec espacement
     scanf(" %[^\n]s", input);
@@ -53,86 +49,19 @@ char** parse_input(char *input) {
 
 
 int longueur = 0;
-//Code jérémy variables
-/*
-void manager_vars(char** parsedArray,char** parameters){
-    //gere les assignations de variables
-    const char egal[2] = "=";
-    char **ligneSep = parse(parsedArray,egal);
-    int mot = 0;
 
-    while(ligneSep[mot]!=NULL)
-    {
-        const char *variable;
-        int caractere = 0;
-        while (ligneSep[mot][caractere] != 0)
-        {//veut le dernier caractere
-            variable = &ligneSep[mot][caractere];
-            caractere = caractere + 1;
-        }
-
-        if(ligneSep[mot+1]!=NULL)//si on est pas au dernier mot
-        {
-            const char *valeur = &ligneSep[mot+1][0]; //va chercher la valeur
-            int overwrite = 1;
-            int retour3 = setenv(variable,valeur,overwrite);
-            if (retour3 == -1)
-            {
-                printf("%d",errno);
-            }
-        }
-
-    }
-
-    //gere les appels aux variable avec $
-    free(ligneSep);
-    const char dollar[2] = "$";
-    free(ligneCommande);
-
-    char *copieLigneCommande = malloc( longueur * sizeof(char));
-
-    copieLigneCommande = strcpy(copieLigneCommande, command);
-
-    char **ligneCommSep;
-    ligneCommSep = parse(copieLigneCommande,dollar);
-    free(copieLigneCommande);
-
-    int i = 1;
-    const char *variable;
-    char *valeur;
-    while (ligneCommSep[i] != NULL)
-    {
-        variable = &ligneCommSep[i][0];
-        valeur = getenv(variable);
-        //TODO:a completer probleme est remplacer la variable par sa valeur
-    }
-}
-*/
-char** getParameters(char** arrayInput){
+char** getParameters(char** arrayInput, int start, int end){
     if (longueur==0){
-        while(arrayInput[longueur]!= 0)
-        {
+        while(arrayInput[longueur]!= 0) {
             longueur = longueur + 1;
         }
     }
 
-    int i = 0;
-    while(arrayInput[i]!=NULL){
-        i++;
-    }
-
-    const char ch = '=';
-    if (i<=1){
-        char* ret = strchr(arrayInput[0],ch);
-
-        if (ret!=NULL){
-            //manager_vars();
-        }
-    }
     char **temp = (char **) malloc(sizeof(char*)*BUFSIZ);
-
-    for (int i = 0; i<sizeof(arrayInput);i++){
-        temp[i] = arrayInput[i];
+    int k=0;
+    for (int j = start; j<end;j++){
+        temp[k] = arrayInput[j];
+        k++;
     }
     return temp;
 }
@@ -188,16 +117,23 @@ void execution (char** arrayInput, char** temp)
             printf("erreur 1 = %s",strerror(errno));
         }
     } else {
-        int value_returned;
-        if (temp[0] != NULL){
-            //Pour ls et cat et compagnie
-            value_returned = execvp(arrayInput[0],temp);
+        int value_returned=0;
+        pid_t pid = fork();
+        if (pid ==0){
+            if (temp[0] != NULL){
+                //Pour ls et cat et compagnie
+                value_returned = execvp(arrayInput[0],temp);
+            }else{
+                //Pour les déclarations de variables
+                value_returned = execlp(arrayInput[0],arrayInput[0],0);
+            }
+
         }else{
-            //Pour les déclarations de variables
-            value_returned = execlp(arrayInput[0],arrayInput[0],0);
+            wait(NULL);
         }
 
         if (value_returned == -1) {
+            //TODO : Cette commande bug la quatrieme fois for i in 1 2 3 ; do ls ; done
             printf("erreur 2 = %s",strerror(errno));
 
         }
@@ -208,6 +144,15 @@ struct Return {
     bool format;
     int posPointVirg;
 };
+
+int findNextSplit(int start, char** command){
+
+    //Loop until reach the first ;
+    while (strcmp(command[start], ";") != 0){
+        start++;
+    }
+    return start;
+}
 
 struct Return checkFor(char **command){
     char *variable = command[1];
@@ -223,12 +168,7 @@ struct Return checkFor(char **command){
         return return1;
     }
 
-    int posPointVirg = 2;
-
-    //Loop until reach the first ;
-    while (strcmp(command[posPointVirg], ";") != 0){
-        posPointVirg++;
-    }
+    int posPointVirg = findNextSplit(2, command);
 
     if (strcmp(command[posPointVirg + 1], "do") != 0) {
         printf("For badly made, need the format For x in range;Do ...; Done");
@@ -238,24 +178,26 @@ struct Return checkFor(char **command){
     return return2;
 }
 
-int runFor(char **command,  char *input, int pos){
+int runFor(char **command, int pos){
+    //TODO: Rajouter un autre while pour chaque instruction
     char *variable = command[1];
-    //Point towards the body of the for
-    char *commandesFor = strstr(input, "do") + 2;
-    char *copy = malloc(strlen(input) * sizeof(char));
-    copy = strcpy(copy, commandesFor);
+    int start = pos+2;
+    //Point towards the body of the for (starts at the first ; and skip the do)
+    char *commandesDo = command[start];
     int i = 3;
     int overwrite = 1;
+    int end =  findNextSplit(start, command);
     while (i < pos) {
         setenv(variable, command[i], overwrite);
-        char *commandeNonParse;//c'est la commande qui est parse par rapport au ;
-        const char pointVirgule[2] = ";";
-        commandeNonParse =  strtok(commandesFor,pointVirgule);
-
+        char *commandeNonParse =  strtok(commandesDo,";");
         char **commandParse = parse_input(commandeNonParse);
+        //printf("%s",commandeNonParse);
+        //printf("%s",commandParse[1]);
         while (commandeNonParse != NULL) {
-            lireLigne(commandParse,commandeNonParse);
-            commandeNonParse = strtok(NULL,pointVirgule);
+            remplaceVariable(commandParse);
+            char **parameters = getParameters (command, start, end);
+            execution(commandParse,parameters);
+            commandeNonParse = strtok(NULL,";");
             if (commandeNonParse != NULL) {
                 commandParse = parse_input(commandeNonParse);
                 //parameters1 = getParameters (command1);
@@ -265,7 +207,6 @@ int runFor(char **command,  char *input, int pos){
         }
         i++;
     }
-    free(copy);
     return i;
 }
 
@@ -284,13 +225,12 @@ void lireLigne(char **command,  char *input) {
     bool passer = false;
     int i = 0;
     const char *pour = "for";
-
     //Check if "for" is the command
     if (strstr(command[0], pour)!= NULL) {
         //Check if for is well made
         struct Return rtn = checkFor(command);
         if (rtn.format){
-            i = runFor(command,input,rtn.posPointVirg);
+            i = runFor(command,rtn.posPointVirg);
         }else{
             return;
         }
@@ -310,7 +250,7 @@ void lireLigne(char **command,  char *input) {
 
     //On a une commande
     if (passer == false){
-        char **parameters = getParameters (command);
+        char **parameters = getParameters (command, 0, sizeof(command));
         execution(command,parameters);
     }
 }
@@ -322,69 +262,14 @@ int main(void) {
     char input[200];
     setenv("i","1",1);//pour tester si marche avec $ TODO: enlever le test
     while (strcmp(input, "exit") != 0) {
-        if(fork() != 0){
-            wait(NULL);
-        } else{
             char *result = read_input();
             char **command = parse_input(result);
-            //char **parameters = getParameters (command);
             lireLigne(command,input);
             printf("\r\n Mini-Shell > ");
-        }
     }
     fprintf(stdout, "Bye!\n");
     exit(0);
 }
-
-
-//Prend un pointeur et l'assigne dans un tableau de pointeurs
-char **parse(char **string, const char *delim)
-{
-    // inspire par
-    // https://www.tutorialspoint.com/c_standard_library/c_function_strtok.htm
-    //TODO: VERIFIER SI MARCHE AVEC STRING CHAR**
-    char *partie = strtok(string[0],delim);
-
-    char **tableau = malloc(20 * sizeof(char*));
-
-    tableau[0] = partie;
-    //   int index= sizeof (partie);
-    int index= 1;
-
-
-    while(partie != NULL)
-    {
-        partie = strtok(NULL,delim);
-        tableau[index] = partie ;
-        //index = index + sizeof(partie);
-        index++;
-        if (index  >= sizeof (tableau))
-        {
-            int taille = sizeof (tableau) ;
-
-            char **echange = malloc(taille * 2 );
-            for (int i = 0; i <  taille ; ++i)
-            {
-                echange[i] = tableau[i];
-            }
-            free(tableau);
-            char **tableau = malloc(sizeof(echange));
-
-            for (int i = 0; i <  taille ; ++i)
-            {
-                strcpy(tableau[i],echange[i]);
-            }
-
-            free(echange);
-        }
-    }
-    return tableau;
-
-}
-/* void lireFor (char **command, char **parameters, char *input) {
-    //faire gestion si commande est un for
-
-}*/
 
     /* char *commandeNonParse;//c'est la commande qui est parse par rapport au ;
     const char pointVirgule[2] = ";";
@@ -411,10 +296,3 @@ char **parse(char **string, const char *delim)
             lireLigne(commandParse,commandeNonParse);
         }
     }*/
-
-//void lireLigne(char **command, char **parameters, char *input)
-
-
-
-
-
