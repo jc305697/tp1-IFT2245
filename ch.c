@@ -21,17 +21,26 @@ char* getNextValue(char *currentToken){
 }
 
 //Lit ce que l'usager entre et le split selon l'espace
-char* read_input() {
+struct returnRead
+{
+    char *split;
+    char *input;
+};
+struct returnRead read_input() {
     char* input;
     input = (char *) malloc(200 * sizeof(char));
 
     //Crédit G Praveen Kumar pour le scanf avec espacement
     scanf(" %[^\n]s", input);
+    char *copieInput =malloc(strlen(input) * sizeof(char));
+    copieInput = strcpy(copieInput,input);
     //getline(&input,&taille,stdin);//TODO: remplacer scanf par getline
     //Sépare chaque partie du string
     char *split;
     split = strtok(input, " ");
-    return split;
+    struct returnRead retour = {split,copieInput};
+   // return split;
+    return retour;
 }
 
 //Prend un pointeur et crée un array de pointeurs pour chaque mot
@@ -114,7 +123,7 @@ int execution (char** arrayInput, char** temp)
         if(retour == -1)
         {
             printf("%d",errno);
-            printf("erreur 1 = %s",strerror(errno));
+            printf("erreur 1 = %s \n",strerror(errno));
         }
         return retour;
     }
@@ -138,7 +147,7 @@ int execution (char** arrayInput, char** temp)
 
         if (value_returned == -1) {
             //TODO : Cette commande bug la quatrieme fois for i in 1 2 3 ; do ls ; done
-            printf("erreur 2 = %s",strerror(errno));
+            //printf("erreur 2 = %s\n",strerror(errno));
         }
         return value_returned;
     }
@@ -264,8 +273,10 @@ int lireLigne(char **command,  char *input)
     int mot = 0;
     int lettre = 0;
 
-    while(command[mot])
+    while(command[mot] != NULL)
     {
+
+        printf(" command[mot]= %s, mot = %d et command length = %zu\n", command[mot],mot,strlen(*command));
         char *resultat = strstr(command[mot], et);
         char *resultatOu = strstr(command[mot], ou);
 
@@ -410,9 +421,14 @@ int main(void) {
     //printf("%s",strerror(11));
   //  setenv("i","1",1);//pour tester si marche avec $ TODO: enlever le test
     while (strcmp(input, "exit") != 0) {
-            char *result = read_input();
+            //char *result = read_input();
+            struct returnRead retour = read_input();
+            char *result = retour.split;
+            char *copieInput = retour.input;
             char **command = parse_input(result);
-            lireLigne(command,input);
+           // printf("input = %s",input);
+          //  lireLigne(command,input);
+            lireLigne(command,copieInput);
             printf("\r\n Mini-Shell > ");
     }
     fprintf(stdout, "Bye!\n");
