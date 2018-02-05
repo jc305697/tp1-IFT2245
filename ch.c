@@ -276,9 +276,10 @@ int lireLigne(char **command,  char *input)
     while(command[mot] != NULL)
     {
 
-        printf(" command[mot]= %s, mot = %d et command length = %zu\n", command[mot],mot,strlen(*command));
+
         char *resultat = strstr(command[mot], et);
         char *resultatOu = strstr(command[mot], ou);
+        printf(" command[mot]= %s, mot = %d et command length = %zu, resultat= %s,resultatOu= %s\n", command[mot],mot,strlen(*command),resultat,resultatOu);
 
         if (resultat != NULL) {//s'il y a un &&
             char *premierePartie;
@@ -304,12 +305,14 @@ int lireLigne(char **command,  char *input)
             valeurRetour1 = lireLigne(&premierePartie,premierePartieInput);
             if (valeurRetour1 < 0)//si la premiere partie a une erreur
             {
+
+
+                printf("%s:%s:%s\n",command[0],command[1],strerror(errno));
+
                 free(premierePartie);
                 free(deuximePartie);
                 free(premierePartieInput);
                 free(deuximePartieInput);
-
-                printf("%s",strerror(errno));
 
                 return valeurRetour1; //je n'execute pas la 2e partie
             }
@@ -317,11 +320,12 @@ int lireLigne(char **command,  char *input)
             valeurRetour2 = lireLigne(&deuximePartie,deuximePartieInput);
             if (valeurRetour2 < 0)
             {
+
+                printf("%s:%s:%s\n",&(resultat + 1)[0],&(resultat + 1)[1],strerror(errno));
                 free(premierePartie);
                 free(deuximePartie);
                 free(premierePartieInput);
                 free(deuximePartieInput);
-                printf("%s",strerror(errno));
                 return valeurRetour2;//je retourne la 2e partie
             }
 
@@ -352,6 +356,7 @@ int lireLigne(char **command,  char *input)
             valeurRetour1 = lireLigne(&premierePartie,premierePartieInput);
             if (valeurRetour1 >= 0)//si succes dans la premiere partie
             {
+
                 free(premierePartie);
                 free(deuximePartie);
                 free(premierePartieInput);
@@ -359,7 +364,12 @@ int lireLigne(char **command,  char *input)
                 return valeurRetour1;//pas besoin d'executer la 2e partie
             }
 
+            printf("%s:%s:%s\n",command[0],command[1],strerror(errno));
+            //echec premiere partie(commande)
+
             valeurRetour2 = lireLigne(&deuximePartie,deuximePartieInput);
+
+
             if (valeurRetour2 >= 0)//si succes dans la premiere partie
             {
                 free(premierePartie);
