@@ -14,6 +14,7 @@ problèmes connus: a date aucun
 #include <ctype.h>
 #include <stdbool.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 
 
 //Va chercher le prochain TOKEN dans le strtok
@@ -121,31 +122,35 @@ void remplaceVariable (char **command)
 
 int execution (char** arrayInput, char** temp) {
     char cd[3] = "cd";
+    int stat;
     //Commande particuliere
     if( strcmp(arrayInput[0],cd) == 0){
         //cd n'a qu'un seul argument
         int retour = chdir(temp[1]);
-        if(retour == -1)
-        {
+        if(retour == -1) {
             printf("%d",errno);
             printf("erreur 1 = %s \n",strerror(errno));
         }
         return retour;
     } else {
         //Toutes les autres commandes
-        int value_returned=0;
+        int value_returned = 0;
         pid_t pid = fork();
-        if (pid ==0){
+        if (pid == 0){
+            //child
             if (temp[0] != NULL){
                 //Pour ls et cat et compagnie
                 value_returned = execvp(arrayInput[0],temp);
             }
-        }
-        else{
+        }else{
             wait(NULL);
+            if (!WIFEXITED(&stat))
+                //printf(WIFSIGNALED(&stat));
+                return -1;
         }
 
         if (value_returned == -1) {
+            printf("test maude");
             //TODO : Cette commande bug la quatrieme fois for i in 1 2 3 ; do ls ; done
             //printf("erreur 2 = %s\n",strerror(errno));
         }
@@ -257,7 +262,6 @@ int lireLigne(char **command) {
     const char *et = "&&";
     const char *ou = "||";
     int mot = 0; //à enlever
-
     //Check if "for" is the command
     if (strstr(command[0], pour)!= NULL) {
         //Check if for is well made
@@ -321,6 +325,14 @@ struct concat getNextConcat(char** command, int start){
     return ct;
 }
 
+int getLastWord(char** command,int start){
+    int temp = start;
+    while (command[temp] != NULL){
+        temp++;
+    }
+    return temp;
+}
+
 int splitParts(char** command){
     int i = 0;
     int valeur_retour;
@@ -328,39 +340,42 @@ int splitParts(char** command){
     const char *et = "&&";
     const char *ou = "||";
     int mot = 0; //à enlever
-    //getNextConcat(command,mot);
-/*
-    int start = 0;
-    int end = mot-1;
-    char** pfirst = copy(command, start, end);
-    start = mot+1;
-    end = getLastWord(command);
-    char** psecond = copy(command, start, end);
+    struct concat res;
+    res = getNextConcat(command,mot);
 
-    int valeurRetour1 = lireLigne(&premierePartie);
-    if (valeurRetour1 < 0) {//si la premiere partie a une erreur
-        myFree(pfirst);
-        myFree(psecond);
-        return valeurRetour1; //je n'execute pas la 2e partie
+    if (res.isNext){
+        if (res.type==0){
+            int start = 0;
+            int end = res.pos;
+            char** pfirst = copy(command, start, end);
+            start = res.pos+1;
+            end = getLastWord(command,start);
+            char** psecond = copy(command, start, end);
+
+            int valeurRetour1 = lireLigne(pfirst);
+            if (valeurRetour1 < 0) {//si la premiere partie a une erreur
+                myFree(pfirst, end-start);
+                myFree(psecond, end-start);
+                return valeurRetour1; //je n'execute pas la 2e partie
+            }
+
+            if (getNextConcat(psecond,0).isNext){
+                splitParts(psecond);
+            }
+
+            int valeurRetour2 = lireLigne(psecond);
+            if (valeurRetour2 < 0) {
+                myFree(pfirst, end-start);
+                myFree(psecond, end-start);
+                return valeurRetour2;//je retourne la 2e partie
+            }
+        }
+    }else{
+        lireLigne(command);
     }
 
-    if (getNextConcat){
-     splitParts(psecond);
-     }
-    int valeurRetour2 = lireLigne(resultat2);
-    if (valeurRetour2 < 0) {
-        free(pfirst);
-        free(psecond);
-        return valeurRetour2;//je retourne la 2e partie
-    }
 
     return 0;
-
-
-
-
-    mot++;
-        */
 
 }
 
@@ -370,7 +385,8 @@ int main(void) {
     char* res = read_input();
     while (strcmp(res, "exit") != 0) {
             char **command = parse_input(res);
-            lireLigne(command);
+            splitParts(command);
+            //lireLigne(command);
             printf("\r\n Mini-Shell > ");
             res = read_input();
     }
