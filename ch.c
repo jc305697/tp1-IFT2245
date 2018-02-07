@@ -172,7 +172,27 @@ bool instructionDone(char** command, int start){
     return true;
 }
 
+void myFree(char **command)
+{
+    for(int i =0 ; i< strlen(*command)-2;i++)
+    {
+        free(command[i]);
+    }
+    free(command);
+}
 
+char** copy(char **command,int start,int end)
+{
+    int longueur = end-start;
+    char **copie = malloc (longueur* sizeof(char*));
+    for(int j =start; j<end;j++)
+    {
+        copie[j] = malloc(strlen(command[j]) * sizeof(char));
+        copie[j] = strcpy(copie[j],command[j]);
+    }
+
+    return copie;
+}
 
 int runFor(char **command, int pos){
     //TODO: Rajouter un autre while pour chaque instruction
@@ -187,27 +207,29 @@ int runFor(char **command, int pos){
         start = pos+2;
         setenv(variable, command[i], overwrite);
         //Boucle pour toutes les exécutions séparée par un ;
-       /* char **copie = malloc (strlen(*command)* sizeof(char*));
-        for(int j =0; j< strlen(*command);j++)
-        {
-            copie[j] = strcpy(copie[j],command[j]);
-        }*/
 
+        char **copie;
         while(!instructionDone(command,start)){
             end = findNextSplit(start, command);
+            /*for (int i = 0; i < strlen(*command) - 1; ++i)
+                printf("%s\n",command[i]);
+            }*/
+             copie = copy(command,0,strlen(*command));
 
-            remplaceVariable(command);
-            //remplaceVariable(copie);
+            //remplaceVariable(command);
+
+           /* for (int i = 0; i < strlen(*copie) -1 ; ++i)
+            {  //imprime le contenue de copie
+                printf("%s\n",copie[i]);
+            }*/
+
+            remplaceVariable(copie);
+
 
             char **parameters = getParameters (command, start, end);
 
              valeur_retour = execution(parameters,parameters);
-           /* for(int j =0; j< strlen(*command);j++)
-            {
-               free( copie[j] );
-            }
-
-            free(copie);*/
+            myFree(copie);
             if (valeur_retour < 0)
             {
                 printf("erreur numero %d dans for \n",valeur_retour);
@@ -244,12 +266,12 @@ int lireLigne(char **command)
     const char *ou = "||";
     int mot = 0; //à enlever
 
-    while(command[mot] != NULL) {
+    /*while(command[mot] != NULL) {
         char *resultat = strstr(command[mot], et);
         char *resultatOu = strstr(command[mot], ou);
-        printf(" command[mot]= %s, mot = %d et command length = %zu, resultat= %s,resultatOu= %s\n", command[mot],mot,strlen(*command),resultat,resultatOu);
+        //printf(" command[mot]= %s, mot = %d et command length = %zu, resultat= %s,resultatOu= %s\n", command[mot],mot,strlen(*command),resultat,resultatOu);
 
-        if (resultat != NULL) {//s'il y a un &&
+       /* if (resultat != NULL) {//s'il y a un &&
             char *resultat2 = strstr(*command, et)+3;//cherche le && dans l'input
             char *premierePartieInput;
             premierePartieInput = malloc((resultat2 - *command) * sizeof(char));
@@ -285,7 +307,7 @@ int lireLigne(char **command)
 
             return 0;
 
-        }
+        }*/
 /*
         if(resultatOu != NULL)//s'il y a un ou
         {
@@ -336,8 +358,8 @@ int lireLigne(char **command)
             return -1;//puisque j'arrive ici si echec dans les 2 parties
         }
         */
-        mot++;
-    }
+      //  mot++;
+    //}*/
 
     //Check if "for" is the command
     if (strstr(command[0], pour)!= NULL) {
@@ -387,6 +409,7 @@ int main(void) {
     char* res = read_input();
     while (strcmp(res, "exit") != 0) {
             char **command = parse_input(res);
+
             lireLigne(command);
             printf("\r\n Mini-Shell > ");
             res = read_input();
