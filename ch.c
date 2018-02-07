@@ -33,9 +33,11 @@ void myFree(char **command)
 char** copy(char **command,int start,int end) {
     int longueur = end - start;
     char **copie = malloc(longueur * sizeof(char *));
+    int i = 0;
     for (int j = start; j < end; j++) {
-        copie[j] = malloc(strlen(command[j]) * sizeof(char));
-        strcpy(copie[j], command[j]);
+        copie[i] = malloc(strlen(command[j]) * sizeof(char));
+        strcpy(copie[i], command[j]);
+        i++;
     }
 
     return copie;
