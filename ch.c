@@ -15,9 +15,30 @@ problèmes connus: a date aucun
 #include <stdbool.h>
 #include <sys/wait.h>
 
+
 //Va chercher le prochain TOKEN dans le strtok
 char* getNextValue(char *currentToken){
     return strtok (NULL, " ");
+}
+
+void myFree(char **command)
+{
+    for(int i =0 ; i< strlen(*command)-2;i++)
+    {
+        free(command[i]);
+    }
+    free(command);
+}
+
+char** copy(char **command,int start,int end) {
+    int longueur = end - start;
+    char **copie = malloc(longueur * sizeof(char *));
+    for (int j = start; j < end; j++) {
+        copie[j] = malloc(strlen(command[j]) * sizeof(char));
+        strcpy(copie[j], command[j]);
+    }
+
+    return copie;
 }
 
 char* read_input() {
@@ -66,7 +87,7 @@ char** getParameters(char** arrayInput, int start, int end){
     return temp;
 }
 
-void remplaceVariable (char **command)
+char** remplaceVariable (char **command)
 { //lit la ligne de commande et remplace les variables identifier par $
     int mot = 0;
     int lettre;
@@ -90,6 +111,7 @@ void remplaceVariable (char **command)
         }
         mot++;
     }
+    return command;
 }
 
 int execution (char** arrayInput, char** temp) {
@@ -186,28 +208,17 @@ int runFor(char **command, int pos){
     while (i < pos) {
         start = pos+2;
         setenv(variable, command[i], overwrite);
-        //Boucle pour toutes les exécutions séparée par un ;
-       /* char **copie = malloc (strlen(*command)* sizeof(char*));
-        for(int j =0; j< strlen(*command);j++)
-        {
-            copie[j] = strcpy(copie[j],command[j]);
-        }*/
 
+        char** copie;
         while(!instructionDone(command,start)){
             end = findNextSplit(start, command);
+            copie = copy(command,start,end);
+            copie = remplaceVariable(copie);
 
-            remplaceVariable(command);
-            //remplaceVariable(copie);
+            char **parameters = getParameters (copie, 0, end-start);
 
-            char **parameters = getParameters (command, start, end);
-
-             valeur_retour = execution(parameters,parameters);
-           /* for(int j =0; j< strlen(*command);j++)
-            {
-               free( copie[j] );
-            }
-
-            free(copie);*/
+            valeur_retour = execution(parameters,parameters);
+            myFree(copie);
             if (valeur_retour < 0)
             {
                 printf("erreur numero %d dans for \n",valeur_retour);
@@ -234,110 +245,13 @@ int runAssignation(char **command){
     return valeur_retour; //-1 si erreur
 }
 
-int lireLigne(char **command)
-{
-
+int lireLigne(char **command) {
     int i = 0;
     int valeur_retour;
     const char *pour = "for";
     const char *et = "&&";
     const char *ou = "||";
     int mot = 0; //à enlever
-
-    while(command[mot] != NULL) {
-        char *resultat = strstr(command[mot], et);
-        char *resultatOu = strstr(command[mot], ou);
-        printf(" command[mot]= %s, mot = %d et command length = %zu, resultat= %s,resultatOu= %s\n", command[mot],mot,strlen(*command),resultat,resultatOu);
-
-        if (resultat != NULL) {//s'il y a un &&
-            char *resultat2 = strstr(*command, et)+3;//cherche le && dans l'input
-            char *premierePartieInput;
-            premierePartieInput = malloc((resultat2 - *command) * sizeof(char));
-            //partie avant le && dans l'input
-
-            premierePartieInput = strncpy(premierePartieInput, *command, resultat2 - *command - 4);
-
-            int valeurRetour1;
-            int valeurRetour2;
-            //
-            valeurRetour1 = lireLigne(&premierePartieInput);
-            if (valeurRetour1 < 0)//si la premiere partie a une erreur
-            {
-
-
-                //printf("%s:%s:%s\n",command[0],command[1],strerror(errno));
-
-                free(premierePartieInput);
-                free(resultat2);
-
-                return valeurRetour1; //je n'execute pas la 2e partie
-            }
-
-            valeurRetour2 = lireLigne(resultat2);
-            if (valeurRetour2 < 0)
-            {
-
-                //printf("%s:%s:%s\n",&(resultat + 1)[0],&(resultat + 1)[1],strerror(errno));
-                free(premierePartieInput);
-                free(resultat2);
-                return valeurRetour2;//je retourne la 2e partie
-            }
-
-            return 0;
-
-        }
-/*
-        if(resultatOu != NULL)//s'il y a un ou
-        {
-            char *premierePartie; //partie avant le ou
-            premierePartie = malloc((resultatOu - command[mot]) * sizeof(char));
-
-            premierePartie = strncpy(premierePartie, command[mot], resultatOu - command[mot]);
-            char *deuximePartie = malloc(strlen(resultatOu+1)* sizeof(char));//partie apres le ou
-            deuximePartie = strcpy(deuximePartie,resultatOu);
-
-            char *resultatOu2 = strstr(input, ou);//cherche le ou dans l'input
-            char *premierePartieInput; //partie avant le ou dans l'input
-            premierePartieInput = malloc((resultatOu2 - input) * sizeof(char));
-
-            premierePartieInput = strncpy(premierePartieInput, input, resultatOu2 - input);
-            char *deuximePartieInput = malloc(strlen(resultatOu+1)* sizeof(char));//partie apres le ou dans l'input
-            deuximePartieInput = strcpy(deuximePartieInput,resultatOu2);
-
-            int valeurRetour1;
-            int valeurRetour2;
-
-            valeurRetour1 = lireLigne(&premierePartie,premierePartieInput);
-            if (valeurRetour1 >= 0)//si succes dans la premiere partie
-            {
-
-                free(premierePartie);
-                free(deuximePartie);
-                free(premierePartieInput);
-                free(deuximePartieInput);
-                return valeurRetour1;//pas besoin d'executer la 2e partie
-            }
-
-            printf("%s:%s:%s\n",command[0],command[1],strerror(errno));
-            //echec premiere partie(commande)
-
-            valeurRetour2 = lireLigne(&deuximePartie,deuximePartieInput);
-
-
-            if (valeurRetour2 >= 0)//si succes dans la premiere partie
-            {
-                free(premierePartie);
-                free(deuximePartie);
-                free(premierePartieInput);
-                free(deuximePartieInput);
-                return valeurRetour2;//pas besoin d'executer la 2e partie
-            }
-
-            return -1;//puisque j'arrive ici si echec dans les 2 parties
-        }
-        */
-        mot++;
-    }
 
     //Check if "for" is the command
     if (strstr(command[0], pour)!= NULL) {
@@ -350,9 +264,7 @@ int lireLigne(char **command)
         }else{
             return -1;
         }
-    }
-
-    else{
+    }else{
         bool passer = false;
 
         //Lit la ligne et remplace les $ par leur valeur
@@ -379,7 +291,69 @@ int lireLigne(char **command)
 
 }
 
+struct concat {
+    bool isNext;
+    int type; //0 for &&, 1 for ||
+};
 
+struct concat getNextConcat(char** command, int start){
+    const char *et = "&&";
+    const char *ou = "||";
+    int mot = start;
+    while (command[mot] != NULL){
+        if (strstr(command[mot],et) != NULL){
+            struct concat ct = {true,0};
+            return ct;
+        }
+    }
+}
+
+int splitParts(char** command){
+    int i = 0;
+    int valeur_retour;
+    const char *pour = "for";
+    const char *et = "&&";
+    const char *ou = "||";
+    int mot = 0; //à enlever
+/*
+    while(command[mot] != NULL) {
+        char *resultat = strstr(command[mot], et);
+        int todetermine = 1000;
+        if (resultat != NULL) {//s'il y a un &&
+
+            int start = 0;
+            int end = mot-1;
+            char* pfirst = copy(command, start, end);
+            start = mot+1;
+            end = getLastWord(command);
+            char* psecond = copy(command, start, end);
+
+            int valeurRetour1 = lireLigne(&premierePartie);
+            if (valeurRetour1 < 0) {//si la premiere partie a une erreur
+                myFree(pfirst);
+                myFree(psecond);
+                return valeurRetour1; //je n'execute pas la 2e partie
+            }
+
+            if (getNextConcat){
+             splitParts(psecond);
+             }
+            int valeurRetour2 = lireLigne(resultat2);
+            if (valeurRetour2 < 0) {
+                free(pfirst);
+                free(psecond);
+                return valeurRetour2;//je retourne la 2e partie
+            }
+
+            return 0;
+
+
+        }
+
+        mot++;
+    }
+    */
+}
 
 int main(void) {
     printf("Mini-Shell > ");
