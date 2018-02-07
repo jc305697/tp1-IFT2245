@@ -178,7 +178,7 @@ void myFree(char **command)
     {
         free(command[i]);
     }
-    free(command);
+    free(command); 
 }
 
 char** copy(char **command,int start,int end)
