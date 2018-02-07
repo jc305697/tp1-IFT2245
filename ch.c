@@ -21,10 +21,9 @@ char* getNextValue(char *currentToken){
     return strtok (NULL, " ");
 }
 
-void myFree(char **command)
+void myFree(char **command, int length)
 {
-    for(int i =0 ; i< strlen(*command)-2;i++)
-    {
+    for(int i =0 ; i < length;i++) {
         free(command[i]);
     }
     free(command);
@@ -32,13 +31,15 @@ void myFree(char **command)
 
 char** copy(char **command,int start,int end) {
     int longueur = end - start;
-    char **copie = malloc(longueur * sizeof(char *));
+    char **copie = malloc(longueur+1 * sizeof(char *));
     int i = 0;
     for (int j = start; j < end; j++) {
         copie[i] = malloc(strlen(command[j]) * sizeof(char));
         strcpy(copie[i], command[j]);
         i++;
     }
+    copie[i] = malloc(sizeof(NULL));
+    copie[i] = NULL;
 
     return copie;
 }
@@ -89,7 +90,7 @@ char** getParameters(char** arrayInput, int start, int end){
     return temp;
 }
 
-char** remplaceVariable (char **command)
+void remplaceVariable (char **command)
 { //lit la ligne de commande et remplace les variables identifier par $
     int mot = 0;
     int lettre;
@@ -113,7 +114,7 @@ char** remplaceVariable (char **command)
         }
         mot++;
     }
-    return command;
+    return;
 }
 
 int execution (char** arrayInput, char** temp) {
@@ -215,12 +216,12 @@ int runFor(char **command, int pos){
         while(!instructionDone(command,start)){
             end = findNextSplit(start, command);
             copie = copy(command,start,end);
-            copie = remplaceVariable(copie);
+            remplaceVariable(copie);
 
             char **parameters = getParameters (copie, 0, end-start);
 
             valeur_retour = execution(parameters,parameters);
-            myFree(copie);
+            myFree(copie, end-start);
             if (valeur_retour < 0)
             {
                 printf("erreur numero %d dans for \n",valeur_retour);
