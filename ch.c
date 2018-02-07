@@ -23,15 +23,17 @@ char* getNextValue(char *currentToken){
 
 void myFree(char **command, int length)
 {
-    for(int i =0 ; i < length;i++) {
-        free(command[i]);
+    for(int i = 0 ; i < length;i++) {
+        if (command[i]!= NULL) {
+            free(command[i]);
+        }
     }
     free(command);
 }
 
 char** copy(char **command,int start,int end) {
     int longueur = end - start;
-    char **copie = malloc(longueur+1 * sizeof(char *));
+    char **copie = malloc(longueur*2 * sizeof(char *));
     int i = 0;
     for (int j = start; j < end; j++) {
         copie[i] = malloc(strlen(command[j]) * sizeof(char));
@@ -297,6 +299,7 @@ int lireLigne(char **command) {
 struct concat {
     bool isNext;
     int type; //0 for &&, 1 for ||
+    int pos;
 };
 
 struct concat getNextConcat(char** command, int start){
@@ -305,10 +308,17 @@ struct concat getNextConcat(char** command, int start){
     int mot = start;
     while (command[mot] != NULL){
         if (strstr(command[mot],et) != NULL){
-            struct concat ct = {true,0};
+            struct concat ct = {true, 0, mot};
             return ct;
         }
+        if (strstr(command[mot],ou) != NULL){
+            struct concat ct = {true, 1, mot};
+            return ct;
+        }
+        mot ++;
     }
+    struct concat ct = {false,-1,-1};
+    return ct;
 }
 
 int splitParts(char** command){
@@ -318,44 +328,40 @@ int splitParts(char** command){
     const char *et = "&&";
     const char *ou = "||";
     int mot = 0; //à enlever
+    //getNextConcat(command,mot);
 /*
-    while(command[mot] != NULL) {
-        char *resultat = strstr(command[mot], et);
-        int todetermine = 1000;
-        if (resultat != NULL) {//s'il y a un &&
+    int start = 0;
+    int end = mot-1;
+    char** pfirst = copy(command, start, end);
+    start = mot+1;
+    end = getLastWord(command);
+    char** psecond = copy(command, start, end);
 
-            int start = 0;
-            int end = mot-1;
-            char* pfirst = copy(command, start, end);
-            start = mot+1;
-            end = getLastWord(command);
-            char* psecond = copy(command, start, end);
-
-            int valeurRetour1 = lireLigne(&premierePartie);
-            if (valeurRetour1 < 0) {//si la premiere partie a une erreur
-                myFree(pfirst);
-                myFree(psecond);
-                return valeurRetour1; //je n'execute pas la 2e partie
-            }
-
-            if (getNextConcat){
-             splitParts(psecond);
-             }
-            int valeurRetour2 = lireLigne(resultat2);
-            if (valeurRetour2 < 0) {
-                free(pfirst);
-                free(psecond);
-                return valeurRetour2;//je retourne la 2e partie
-            }
-
-            return 0;
-
-
-        }
-
-        mot++;
+    int valeurRetour1 = lireLigne(&premierePartie);
+    if (valeurRetour1 < 0) {//si la premiere partie a une erreur
+        myFree(pfirst);
+        myFree(psecond);
+        return valeurRetour1; //je n'execute pas la 2e partie
     }
-    */
+
+    if (getNextConcat){
+     splitParts(psecond);
+     }
+    int valeurRetour2 = lireLigne(resultat2);
+    if (valeurRetour2 < 0) {
+        free(pfirst);
+        free(psecond);
+        return valeurRetour2;//je retourne la 2e partie
+    }
+
+    return 0;
+
+
+
+
+    mot++;
+        */
+
 }
 
 int main(void) {
