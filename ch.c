@@ -358,35 +358,36 @@ int splitParts(char** command){
     }
 
     if (res.isNext){//si il y a un && ou un ||
-        if (res.type==0){//si c'est un &&
-            int start = 0;
-            int end = res.pos;//position du &&
-            char** pfirst = copy(command, start, end);//copie avant le &&
+        int start = 0;
+        int end = res.pos;//position du &&
+        char** pfirst = copy(command, start, end);//copie avant le &&
 
 
 
-            start = res.pos+1;
-            end = getLastWord(command,start);
-            char** psecond = copy(command, start, end);
+        start = res.pos+1;
+        end = getLastWord(command,start);
+        char** psecond = copy(command, start, end);
 
-            int valeurRetour1 = lireLigne(pfirst);
-            if (valeurRetour1 < 0) {//si la premiere partie a une erreur
-                myFree(pfirst, end-start);
-                myFree(psecond, end-start);
-                return valeurRetour1; //je n'execute pas la 2e partie
-            }
-
-            if (getNextConcat(psecond,0).isNext){
-                splitParts(psecond);
-            }
-
-            int valeurRetour2 = lireLigne(psecond);
-            if (valeurRetour2 < 0) {
-                myFree(pfirst, end-start);
-                myFree(psecond, end-start);
-                return valeurRetour2;//je retourne la 2e partie
-            }
+        int valeurRetour1 = lireLigne(pfirst);
+        if (valeurRetour1 < 0 && res.type==0){
+            myFree(pfirst, end-start);
+            myFree(psecond, end-start);
+            return valeurRetour1; //je n'execute pas la 2e partie
         }
+
+        if (getNextConcat(psecond,0).isNext){
+            splitParts(psecond);
+            return 0;
+        }
+
+        int valeurRetour2 = lireLigne(psecond);
+        if (valeurRetour2 < 0) {
+            myFree(pfirst, end-start);
+            myFree(psecond, end-start);
+            return valeurRetour2;//je retourne la 2e partie
+        }
+
+
     }else{
         lireLigne(command);
     }
