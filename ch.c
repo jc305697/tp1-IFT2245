@@ -48,14 +48,15 @@ char** copy(char **command,int start,int end) {
 }
 
 char* read_input() {
+   //char* input =NULL;
     char* input;
+    //size_t taille = 0;
     input = (char *) malloc(200 * sizeof(char));
 
     //Crédit G Praveen Kumar pour le scanf avec espacement
     scanf(" %[^\n]s", input);
-    char *copieInput =malloc(strlen(input) * sizeof(char));
-    copieInput = strcpy(copieInput,input);
-    //getline(&input,&taille,stdin);//TODO: remplacer scanf par getline
+
+   // getline(&input,&taille,stdin);//TODO: remplacer scanf par getline
     //Sépare chaque partie du string
     char *split = strtok(input, " ");
     return split;
@@ -90,6 +91,7 @@ char** getParameters(char** arrayInput, int start, int end){
         temp[k] = arrayInput[j];
         k++;
     }
+
     return temp;
 }
 
@@ -136,23 +138,30 @@ int execution (char** arrayInput, char** temp) {
         //Toutes les autres commandes
         int value_returned = 0;
         pid_t pid = fork();
+        int stat;
         if (pid == 0){
             //child
             if (temp[0] != NULL){
                 //Pour ls et cat et compagnie
+
                 value_returned = execvp(arrayInput[0],temp);
             }
         }else{
             wait(NULL);
             if (!WIFEXITED(&stat))
-                //printf(WIFSIGNALED(&stat));
+                //si le child ne s'est pas terminer normalement
+                printf("%d",WIFSIGNALED(&stat));//true si child a ete terminer par un signal
+                if (WIFSIGNALED(&stat))
+                {
+                    printf("%d",WTERMSIG(&stat));//print le numéro du signal qui a fait terminer le child
+                }
                 return -1;
         }
 
         if (value_returned == -1) {
-            printf("test maude");
+            printf("test maude\n");
             //TODO : Cette commande bug la quatrieme fois for i in 1 2 3 ; do ls ; done
-            //printf("erreur 2 = %s\n",strerror(errno));
+            printf("erreur 2 = %s\n",strerror(errno));
         }
         return value_returned;
     }
@@ -259,9 +268,9 @@ int lireLigne(char **command) {
     int i = 0;
     int valeur_retour;
     const char *pour = "for";
-    const char *et = "&&";
-    const char *ou = "||";
-    int mot = 0; //à enlever
+   // const char *et = "&&";
+    //const char *ou = "||";
+   // //int mot = 0; //à enlever
     //Check if "for" is the command
     if (strstr(command[0], pour)!= NULL) {
         //Check if for is well made
@@ -305,7 +314,10 @@ struct concat {
     int type; //0 for &&, 1 for ||
     int pos;
 };
-
+/*
+ * retourne la position du prochain && ou || isNext indique s'il y en a un
+ * autre. type laquelle des 2 et pos indique la position.
+ */
 struct concat getNextConcat(char** command, int start){
     const char *et = "&&";
     const char *ou = "||";
@@ -336,18 +348,27 @@ int getLastWord(char** command,int start){
 int splitParts(char** command){
     int i = 0;
     int valeur_retour;
-    const char *pour = "for";
-    const char *et = "&&";
-    const char *ou = "||";
+    //const char *pour = "for";
+    //const char *et = "&&";
+   // const char *ou = "||";
     int mot = 0; //à enlever
     struct concat res;
     res = getNextConcat(command,mot);
 
-    if (res.isNext){
-        if (res.type==0){
+    int j = 0;
+    while(command[j]){
+        printf(" command[%d] = %s\n",i,command[j]);
+        j++;
+    }
+
+    if (res.isNext){//si il y a un && ou un ||
+        if (res.type==0){//si c'est un &&
             int start = 0;
-            int end = res.pos;
-            char** pfirst = copy(command, start, end);
+            int end = res.pos;//position du &&
+            char** pfirst = copy(command, start, end);//copie avant le &&
+
+
+
             start = res.pos+1;
             end = getLastWord(command,start);
             char** psecond = copy(command, start, end);
@@ -381,8 +402,9 @@ int splitParts(char** command){
 
 int main(void) {
     printf("Mini-Shell > ");
-    char input[200];
+   // char input[200];
     char* res = read_input();
+    printf("%s",res);
     while (strcmp(res, "exit") != 0) {
             char **command = parse_input(res);
             splitParts(command);
