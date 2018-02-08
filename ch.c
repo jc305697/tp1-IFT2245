@@ -34,7 +34,7 @@ void myFree(char **command, int length)
 
 char** copy(char **command,int start,int end) {
     int longueur = end - start +1;
-    char **copie = malloc(longueur*2 * sizeof(char *));
+    char **copie = malloc(longueur * sizeof(char *));
     int i = 0;
     for (int j = start; j < end; j++) {
         copie[i] = malloc((strlen(command[j]) + 1) * sizeof(char));
@@ -151,28 +151,14 @@ int execution (char** arrayInput, char** temp) {
             //child
             if (temp[0] != NULL){
                 //Pour ls et cat et compagnie
-
                 value_returned = execvp(arrayInput[0],temp);
+                exit(value_returned);
             }
         }else{
-            int stat;
             wait(&stat);
-            if (!WIFEXITED(&stat))
-                //si le child ne s'est pas terminer normalement
-                printf(" WIFSIGNALED = %d\n",WIFSIGNALED(&stat));//true si child a ete terminer par un signal
-            if (WIFSIGNALED(&stat))
-            {
-                printf("WTERMSIG = %d\n",WTERMSIG(&stat));//print le numéro du signal qui a fait terminer le child
-            }
-            return -1;
+            return stat;
         }
 
-        if (value_returned == -1) {
-            printf("test maude\n");
-            //TODO : Cette commande bug la quatrieme fois for i in 1 2 3 ; do ls ; done
-            printf("erreur 2 = %s\n",strerror(errno));
-        }
-        return value_returned;
     }
 }
 
