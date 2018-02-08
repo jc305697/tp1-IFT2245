@@ -33,11 +33,11 @@ void myFree(char **command, int length)
 }
 
 char** copy(char **command,int start,int end) {
-    int longueur = end - start;
+    int longueur = end - start +1;
     char **copie = malloc(longueur*2 * sizeof(char *));
     int i = 0;
     for (int j = start; j < end; j++) {
-        copie[i] = malloc(strlen(command[j]) * sizeof(char));
+        copie[i] = malloc((strlen(command[j]) + 1) * sizeof(char));
         strcpy(copie[i], command[j]);
         i++;
     }
@@ -48,7 +48,7 @@ char** copy(char **command,int start,int end) {
 }
 
 char* read_input() {
-   //char* input =NULL;
+    //char* input =NULL;
     char* input;
     //size_t taille = 0;
     input = (char *) malloc(200 * sizeof(char));
@@ -56,7 +56,7 @@ char* read_input() {
     //Crédit G Praveen Kumar pour le scanf avec espacement
     scanf(" %[^\n]s", input);
 
-   // getline(&input,&taille,stdin);//TODO: remplacer scanf par getline
+    // getline(&input,&taille,stdin);//TODO: remplacer scanf par getline
     //Sépare chaque partie du string
     char *split = strtok(input, " ");
     return split;
@@ -85,7 +85,8 @@ char** getParameters(char** arrayInput, int start, int end){
         }
     }
 
-    char **temp = (char **) malloc(sizeof(char*)*BUFSIZ);
+    char **temp = (char **) malloc(sizeof(char*)*(BUFSIZ ));
+    // char **temp = (char **) malloc(sizeof(char*)*(strlen(*arrayInput) +1));
     int k=0;
     for (int j = start; j<end;j++){
         temp[k] = arrayInput[j];
@@ -104,6 +105,7 @@ void remplaceVariable (char **command)
         lettre = 0;
         while (command[mot][lettre] != 0) {//tant que c'est pas la fin
             if (command[mot][lettre] == '$') {//si je dois remplacer
+                char * referenceOriginal;
                 char *copie = malloc((strlen(command[mot]) + 1) * sizeof(char));
                 if (lettre != 0) {
                     copie = strncpy(copie, command[mot], lettre - 1);
@@ -112,8 +114,14 @@ void remplaceVariable (char **command)
                 char *valeur;
                 valeur = getenv(&command[mot][lettre + 1]);
                 //obtient la valeur de ce que se trouve après $ (va jusqu'à la fin de command[mot])
+                referenceOriginal = command[mot];
+
                 command[mot] = strcpy(&copie[lettre], valeur);
+
+                free(referenceOriginal);
+
                 // pointe vers la string avec la valeur mis à jour
+
             }
             lettre++;
         }
@@ -130,7 +138,7 @@ int execution (char** arrayInput, char** temp) {
         //cd n'a qu'un seul argument
         int retour = chdir(temp[1]);
         if(retour == -1) {
-            printf("%d",errno);
+            printf("numero erreur = %d",errno);
             printf("erreur 1 = %s \n",strerror(errno));
         }
         return retour;
@@ -147,15 +155,16 @@ int execution (char** arrayInput, char** temp) {
                 value_returned = execvp(arrayInput[0],temp);
             }
         }else{
-            wait(NULL);
+            int stat;
+            wait(&stat);
             if (!WIFEXITED(&stat))
                 //si le child ne s'est pas terminer normalement
-                printf("%d",WIFSIGNALED(&stat));//true si child a ete terminer par un signal
-                if (WIFSIGNALED(&stat))
-                {
-                    printf("%d",WTERMSIG(&stat));//print le numéro du signal qui a fait terminer le child
-                }
-                return -1;
+                printf(" WIFSIGNALED = %d\n",WIFSIGNALED(&stat));//true si child a ete terminer par un signal
+            if (WIFSIGNALED(&stat))
+            {
+                printf("WTERMSIG = %d\n",WTERMSIG(&stat));//print le numéro du signal qui a fait terminer le child
+            }
+            return -1;
         }
 
         if (value_returned == -1) {
@@ -260,7 +269,8 @@ int runAssignation(char **command){
     int valeur_retour;
     valeur = strtok(NULL,"="); //Valeur à donner à la variable
     int overwrite = 1;
-    valeur_retour = setenv(variable,valeur,overwrite); //Assignation de la valeur dans l'environnement
+    valeur_retour = setenv(variable,valeur,overwrite);//Assignation de la valeur dans l'environnement
+    free(copie);
     return valeur_retour; //-1 si erreur
 }
 
@@ -268,9 +278,9 @@ int lireLigne(char **command) {
     int i = 0;
     int valeur_retour;
     const char *pour = "for";
-   // const char *et = "&&";
+    // const char *et = "&&";
     //const char *ou = "||";
-   // //int mot = 0; //à enlever
+    // //int mot = 0; //à enlever
     //Check if "for" is the command
     if (strstr(command[0], pour)!= NULL) {
         //Check if for is well made
@@ -350,14 +360,14 @@ int splitParts(char** command){
     int valeur_retour;
     //const char *pour = "for";
     //const char *et = "&&";
-   // const char *ou = "||";
+    // const char *ou = "||";
     int mot = 0; //à enlever
     struct concat res;
     res = getNextConcat(command,mot);
 
     int j = 0;
     while(command[j]){
-        printf(" command[%d] = %s\n",i,command[j]);
+       // printf(" command[%d] = %s\n",i,command[j]);
         j++;
     }
 
@@ -402,16 +412,19 @@ int splitParts(char** command){
 
 int main(void) {
     printf("Mini-Shell > ");
-   // char input[200];
+    // char input[200];
     char* res = read_input();
-    printf("%s",res);
+   // printf(" valeur de input = %s\n",res);
     while (strcmp(res, "exit") != 0) {
-            char **command = parse_input(res);
-            splitParts(command);
-            //lireLigne(command);
-            printf("\r\n Mini-Shell > ");
-            res = read_input();
+        char **command = parse_input(res);
+        splitParts(command);
+        //lireLigne(command);
+       //  free(command);
+       // free(res);
+        printf("\r\n Mini-Shell > ");
+        res = read_input();
     }
     fprintf(stdout, "Bye!\n");
+
     exit(0);
 }
