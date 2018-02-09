@@ -108,6 +108,8 @@ void remplaceVariable (char **command)
 
 
             if (command[mot][lettre] == '$') {//si je dois remplacer la variable par sa valeur
+                printf(" debut command[mot]=%s et mot=%d\n",command[mot],mot);
+                fflush(stdout);
                 char * referenceOriginal;
                 char *copie = malloc((strlen(command[mot]) + 1) * sizeof(char));
                 if (lettre != 0) {
@@ -128,7 +130,7 @@ void remplaceVariable (char **command)
                     }
                     iterateur++;
                 }
-
+                if(occurence != 0){
                 char* varItem = strtok(nextvar, ":");
                 //char* varItem = NULL; // TODO: À enlever quand la ligne du dessus fonctionnera
                 //On a la forme $VAR:$VAR:$VAR...
@@ -161,12 +163,28 @@ void remplaceVariable (char **command)
                     }
 
                     int i = 0;
-                    char *stringConcatTemp;
-                    char * stringConcat = malloc((strlen(tableauTemp[0]) + 2 + strlen("")) * sizeof(char));
-                    //stringConcat = strcpy(stringConcat,"");
-                    stringConcat[0] = '\0';
+                    tableauTemp[posTabTemp +1] = 0;
+                    char *stringConcatTemp = NULL;
+                    char * stringConcat = malloc((strlen(tableauTemp[0]) + 2 + strlen("") + strlen(":")) * sizeof(char));
+                    stringConcat = strcpy(stringConcat," ");
+                  //  stringConcat = strdup(" ");
+                  //  stringConcat[0] = '\0';
                     char *stringTemp;
+                    int flag = 0;
                     while (tableauTemp[i]!=0 && tableauTemp[i+1]!=0) {
+                        int j = 0;
+                        while(tableauTemp[j]!=0){
+                            printf("tableauTemp[%d]= %s\n",j,tableauTemp[j]);
+                            fflush(stdout);
+                            j++;
+                        }
+
+
+                        printf("tableauTemp[%d]= %s\n",i,tableauTemp[i]);
+                        fflush(stdout);
+                      /*  if(stringConcatTemp != NULL){
+                            free(stringConcatTemp);
+                        }*/
                         stringConcatTemp = strcat(tableauTemp[i],":");
 
                         stringConcat = strcat(stringConcat,stringConcatTemp);
@@ -174,24 +192,40 @@ void remplaceVariable (char **command)
                         stringTemp = malloc((strlen(tableauTemp[i+1] + strlen(stringConcat) + 2)) * sizeof(char));
                         //prend plus d'espace memoire pour pouvoir concatener la prochaine string
                         stringTemp = strcpy(stringTemp,stringConcat);
+
                         //copie la string actuelle dans le nouvel espace memoire
                         free(stringConcat);
+
                         //libere ancien espace memoire et donne le nouvel espace memoire
                         stringConcat =stringTemp;
 
-                        free(stringConcatTemp);
+                        //free(stringConcatTemp);
                         i++;
                     }
                     if ((tableauTemp[i]!=0 && tableauTemp[i+1]==0)){
+                        printf("tableauTemp[%d]= %s\n",i,tableauTemp[i]);
+                        fflush(stdout);
                         stringConcat = strcat(stringConcat,tableauTemp[i]);
                         i++;
+                        flag = 1;
+                        printf("StringConcat= %s\n",stringConcat);
+                        fflush(stdout);
                     }
                     free(command[mot]);
                     command[mot] = stringConcat;
                     free(referenceOriginal);
+                    if (flag == 1){
+                        free(stringConcat);
+                    }
 
-                }else{
+
+                }
+                }
+
+
+                else{
                     char *valeur = getenv(&command[mot][lettre + 1]);
+                    printf("variable = %s\n",&command[mot][lettre + 1]);
                     //obtient la valeur de ce que se trouve après $ (va jusqu'à la fin de command[mot])
                     referenceOriginal = command[mot];
 
