@@ -50,12 +50,13 @@ char** copy(char **command,int start,int end) {
 char* read_input() {
     //char* input =NULL;
     char* input;
-    //size_t taille = 0;
+    size_t taille = 0;
     input = (char *) malloc(200 * sizeof(char));
 
     //Crédit G Praveen Kumar pour le scanf avec espacement
-    scanf(" %[^\n]s", input);
-
+    //scanf(" %[^\n]s", input);
+    getline(&input,&taille,stdin);
+    input = strtok(input,"\n");
     // getline(&input,&taille,stdin);//TODO: remplacer scanf par getline
     //Sépare chaque partie du string
     char *split = strtok(input, " ");
@@ -300,7 +301,6 @@ int lireLigne(char **command) {
             valeur_retour = execution(command,parameters);
             return valeur_retour;
         }
-        return -1;
     }
 
 }
@@ -341,7 +341,7 @@ int getLastWord(char** command,int start){
     return temp;
 }
 
-int splitParts(char** command){
+void splitParts(char** command){
     int i = 0;
     int valeur_retour;
     //const char *pour = "for";
@@ -351,40 +351,34 @@ int splitParts(char** command){
     struct concat res;
     res = getNextConcat(command,mot);
 
-    int j = 0;
-    while(command[j]){
-       // printf(" command[%d] = %s\n",i,command[j]);
-        j++;
-    }
-
     if (res.isNext){//si il y a un && ou un ||
         int start = 0;
         int end = res.pos;//position du &&
         char** pfirst = copy(command, start, end);//copie avant le &&
-
-
 
         start = res.pos+1;
         end = getLastWord(command,start);
         char** psecond = copy(command, start, end);
 
         int valeurRetour1 = lireLigne(pfirst);
-        if (valeurRetour1 < 0 && res.type==0){
+        if (valeurRetour1 != 0 && res.type==0){
             myFree(pfirst, end-start);
             myFree(psecond, end-start);
-            return valeurRetour1; //je n'execute pas la 2e partie
+            return;
+        }else if (valeurRetour1==0 && res.type==1){
+            return;
         }
 
         if (getNextConcat(psecond,0).isNext){
             splitParts(psecond);
-            return 0;
+            return;
         }
 
         int valeurRetour2 = lireLigne(psecond);
-        if (valeurRetour2 < 0) {
+        if (valeurRetour2 != 0) {
             myFree(pfirst, end-start);
             myFree(psecond, end-start);
-            return valeurRetour2;//je retourne la 2e partie
+            return;//je retourne la 2e partie
         }
 
 
@@ -393,7 +387,7 @@ int splitParts(char** command){
     }
 
 
-    return 0;
+    return;
 
 }
 
@@ -401,13 +395,13 @@ int main(void) {
     printf("Mini-Shell > ");
     // char input[200];
     char* res = read_input();
-   // printf(" valeur de input = %s\n",res);
+    // printf(" valeur de input = %s\n",res);
     while (strcmp(res, "exit") != 0) {
         char **command = parse_input(res);
         splitParts(command);
         //lireLigne(command);
-       //  free(command);
-       // free(res);
+        //  free(command);
+        // free(res);
         printf("\r\n Mini-Shell > ");
         res = read_input();
     }
