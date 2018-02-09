@@ -116,7 +116,7 @@ void remplaceVariable (char **command)
                 }
                 //S'il y a d'autres variables pas séparées par des espaces
                 //char** nextvar = copy(command, mot, mot+1);//copie le mot
-                char  *nextvar = NULL;
+                char  *nextvar = malloc((strlen(command[mot]) + 1) * sizeof(char) );
                 nextvar = strcpy(nextvar,command[mot]);
                 //TODO JÉRÉMY : Sais-tu comment je peux accéder au mot? ici quand je mets *nextchar ça me dit ya un token même si yen a pas (avec for j in 1 2 3 ; do echo $i $j ; done)
 
@@ -162,11 +162,23 @@ void remplaceVariable (char **command)
 
                     int i = 0;
                     char *stringConcatTemp;
-                    char * stringConcat = NULL;
-                    stringConcat = strcpy(stringConcat,"");
+                    char * stringConcat = malloc((strlen(tableauTemp[0]) + 2 + strlen("")) * sizeof(char));
+                    //stringConcat = strcpy(stringConcat,"");
+                    stringConcat[0] = '\0';
+                    char *stringTemp;
                     while (tableauTemp[i]!=0 && tableauTemp[i+1]!=0) {
                         stringConcatTemp = strcat(tableauTemp[i],":");
+
                         stringConcat = strcat(stringConcat,stringConcatTemp);
+
+                        stringTemp = malloc((strlen(tableauTemp[i+1] + strlen(stringConcat) + 2)) * sizeof(char));
+                        //prend plus d'espace memoire pour pouvoir concatener la prochaine string
+                        stringTemp = strcpy(stringTemp,stringConcat);
+                        //copie la string actuelle dans le nouvel espace memoire
+                        free(stringConcat);
+                        //libere ancien espace memoire et donne le nouvel espace memoire
+                        stringConcat =stringTemp;
+
                         free(stringConcatTemp);
                         i++;
                     }
