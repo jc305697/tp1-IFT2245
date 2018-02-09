@@ -112,16 +112,41 @@ void remplaceVariable (char **command)
                     copie = strncpy(copie, command[mot], lettre - 1);
                     //copie tout ce qui est dans le string avant le $
                 }
-                char *valeur;
-                valeur = getenv(&command[mot][lettre + 1]);
-                //obtient la valeur de ce que se trouve après $ (va jusqu'à la fin de command[mot])
-                referenceOriginal = command[mot];
+                //S'il y a d'autres variables pas séparées par des espaces
+                char** nextvar = copy(command, mot, mot+1);
+                char* varItem = strtok(*nextvar, ":");
 
-                command[mot] = strcpy(&copie[lettre], valeur);
+                //On a la forme $VAR:$VAR:$VAR...
+                if (varItem != NULL){
+                    int i = 0;
+                    int j = 1;
+                    //Tant que existe des token (donc des variables)
+                    while (varItem != NULL) {
+                        //Va chercher la valeur au mot i à la première lettre (évite le $)
+                        char *valeur = getenv(&nextvar[i][j]);
+                        referenceOriginal = nextvar[i];
+                        //==============================================================================================
+                        //TODO JÉRÉMY : PEUX-TU FIX CECI, JE SAIS PAS TROP OÙ LE COPIER..
+                        //En ce moment VALEUR contient la vrai valeur et il faudrait le mettre dans un tableau temporaire
+                        //Et seulement à la fin utiliser strconcat pour tout remettre ensemble sous format var:var:var
+                        //==============================================================================================
+                        strcpy(&copie[j], valeur);
+                        free(referenceOriginal);
+                        free(valeur);
+                        i++;
+                        varItem = strtok (NULL, ":");
+                    }
+                }else{
+                    char *valeur = getenv(&command[mot][lettre + 1]);
+                    //obtient la valeur de ce que se trouve après $ (va jusqu'à la fin de command[mot])
+                    referenceOriginal = command[mot];
 
-                free(referenceOriginal);
+                    command[mot] = strcpy(&copie[lettre], valeur);
 
-                // pointe vers la string avec la valeur mis à jour
+                    free(referenceOriginal);
+
+                    // pointe vers la string avec la valeur mis à jour
+                }
 
             }
             lettre++;
@@ -133,7 +158,6 @@ void remplaceVariable (char **command)
 
 int execution (char** arrayInput, char** temp) {
     char cd[3] = "cd";
-    int stat;
     //Commande particuliere
     if( strcmp(arrayInput[0],cd) == 0){
         //cd n'a qu'un seul argument
@@ -150,7 +174,7 @@ int execution (char** arrayInput, char** temp) {
         int stat;
         if (pid == 0){
             //child
-            if (temp[0] != NULL){
+            if (temp[1] != NULL){
                 //Pour ls et cat et compagnie
                 value_returned = execvp(arrayInput[0],temp);
                 exit(value_returned);
@@ -168,9 +192,9 @@ struct Return {
     int posPointVirg;
 };
 
-int findNextSplit(int start, char** command){
+int findNextSplit(int start, char** command, char* val){
     //Loop until reach the first ;
-    while (strcmp(command[start], ";") != 0){
+    while (strcmp(command[start], val) != 0){
         start++;
     }
     return start;
@@ -191,7 +215,7 @@ struct Return checkFor(char **command){
         return return1;
     }
 
-    int posPointVirg = findNextSplit(2, command);
+    int posPointVirg = findNextSplit(2, command, ";");
 
     if (strcmp(command[posPointVirg + 1], "do") != 0) {
         printf("For badly made, need the format For x in range;Do ...; Done");
@@ -221,12 +245,17 @@ int runFor(char **command, int pos){
     int valeur_retour;
 
     while (i < pos) {
+        if (strstr(command[i],"$")){
+            char *valeur = getenv(&command[i][1]);
+            command[i] = valeur;
+        }
         start = pos+2;
+
         setenv(variable, command[i], overwrite);
 
         char** copie;
         while(!instructionDone(command,start)){
-            end = findNextSplit(start, command);
+            end = findNextSplit(start, command, ";");
             copie = copy(command,start,end);
             remplaceVariable(copie);
 
@@ -385,9 +414,6 @@ void splitParts(char** command){
     }else{
         lireLigne(command);
     }
-
-
-    return;
 
 }
 
