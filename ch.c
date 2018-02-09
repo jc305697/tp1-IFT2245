@@ -51,7 +51,7 @@ char* read_input() {
     //char* input =NULL;
     char* input;
     size_t taille = 0;
-    input = (char *) malloc(200 * sizeof(char));
+    //input = (char *) malloc(200 * sizeof(char));
 
     //Crédit G Praveen Kumar pour le scanf avec espacement
     //scanf(" %[^\n]s", input);
@@ -102,10 +102,12 @@ void remplaceVariable (char **command)
     int mot = 0;
     int lettre;
 
-    while(command[mot] != 0) { //tant que c'est pas la fin
+    while(command[mot] != 0) { //tant que c'est pas la fin de command
         lettre = 0;
-        while (command[mot][lettre] != 0) {//tant que c'est pas la fin
-            if (command[mot][lettre] == '$') {//si je dois remplacer
+        while (command[mot][lettre] != 0) {//tant que c'est pas la fin du mot
+
+
+            if (command[mot][lettre] == '$') {//si je dois remplacer la variable par sa valeur
                 char * referenceOriginal;
                 char *copie = malloc((strlen(command[mot]) + 1) * sizeof(char));
                 if (lettre != 0) {
@@ -113,30 +115,69 @@ void remplaceVariable (char **command)
                     //copie tout ce qui est dans le string avant le $
                 }
                 //S'il y a d'autres variables pas séparées par des espaces
-                char** nextvar = copy(command, mot, mot+1);
+                //char** nextvar = copy(command, mot, mot+1);//copie le mot
+                char  *nextvar = NULL;
+                nextvar = strcpy(nextvar,command[mot]);
                 //TODO JÉRÉMY : Sais-tu comment je peux accéder au mot? ici quand je mets *nextchar ça me dit ya un token même si yen a pas (avec for j in 1 2 3 ; do echo $i $j ; done)
-                //char* varItem = strtok(nextvar, ":");
-                char* varItem = NULL; // TODO: À enlever quand la ligne du dessus fonctionnera
+
+                int iterateur = 0;
+                int occurence = 0;
+                while (nextvar[iterateur] != 0){
+                    if (nextvar[iterateur] == ':'){
+                        occurence = occurence + 2;
+                    }
+                    iterateur++;
+                }
+
+                char* varItem = strtok(nextvar, ":");
+                //char* varItem = NULL; // TODO: À enlever quand la ligne du dessus fonctionnera
                 //On a la forme $VAR:$VAR:$VAR...
-                if (varItem != NULL){
-                    int i = 0;
+                if (varItem != NULL){//s'il reste des string qui avait : comme separateur
+                    //int i = 0;
                     int j = 1;
+                    char **tableauTemp = malloc((occurence + 1) * sizeof(char*));
+                    int posTabTemp =0;
+                    referenceOriginal = nextvar;
                     //Tant que existe des token (donc des variables)
                     while (varItem != NULL) {
                         //Va chercher la valeur au mot i à la première lettre (évite le $)
-                        char *valeur = getenv(&nextvar[i][j]);
-                        referenceOriginal = nextvar[i];
+                        //   char *valeur = getenv(&nextvar[i][j]);//&nextvar[i][j] est le pointeur vers la string de la variable
+                        char *valeur = getenv(&varItem[j]);
+                        // referenceOriginal = nextvar[i];
+
+                        tableauTemp[posTabTemp] = valeur;
+                        posTabTemp ++;
                         //==============================================================================================
                         //TODO JÉRÉMY : PEUX-TU FIX CECI, JE SAIS PAS TROP OÙ LE COPIER..
                         //En ce moment VALEUR contient la vrai valeur et il faudrait le mettre dans un tableau temporaire
                         //Et seulement à la fin utiliser strconcat pour tout remettre ensemble sous format var:var:var
                         //==============================================================================================
-                        strcpy(&copie[j], valeur);
-                        free(referenceOriginal);
-                        free(valeur);
-                        i++;
+
+                        //  strcpy(&copie[j], valeur);
+                        // free(referenceOriginal); voir quand je peux free
+                        //  free(valeur);
+                        //i++;
                         varItem = strtok (NULL, ":");
                     }
+
+                    int i = 0;
+                    char *stringConcatTemp;
+                    char * stringConcat = NULL;
+                    stringConcat = strcpy(stringConcat,"");
+                    while (tableauTemp[i]!=0 && tableauTemp[i+1]!=0) {
+                        stringConcatTemp = strcat(tableauTemp[i],":");
+                        stringConcat = strcat(stringConcat,stringConcatTemp);
+                        free(stringConcatTemp);
+                        i++;
+                    }
+                    if ((tableauTemp[i]!=0 && tableauTemp[i+1]==0)){
+                        stringConcat = strcat(stringConcat,tableauTemp[i]);
+                        i++;
+                    }
+                    free(command[mot]);
+                    command[mot] = stringConcat;
+                    free(referenceOriginal);
+
                 }else{
                     char *valeur = getenv(&command[mot][lettre + 1]);
                     //obtient la valeur de ce que se trouve après $ (va jusqu'à la fin de command[mot])
@@ -233,6 +274,13 @@ bool instructionDone(char** command, int start){
     return true;
 }
 
+int exec (char** copie, int start, int end){
+    int valeur_retour;
+    char **parameters = getParameters (copie, 0, end-start);
+    valeur_retour = execution(parameters,parameters);
+    myFree(copie, end-start);
+    return valeur_retour;
+}
 
 
 int runFor(char **command, int pos){
@@ -278,13 +326,6 @@ int runFor(char **command, int pos){
     return valeur_retour;
 }
 
-int exec (char** copie, int start, int end){
-    int valeur_retour;
-    char **parameters = getParameters (copie, 0, end-start);
-    valeur_retour = execution(parameters,parameters);
-    myFree(copie, end-start);
-    return valeur_retour;
-}
 
 int runAssignation(char **command){
     char *copie = malloc((strlen(command[0])+ 1) * sizeof(char));
