@@ -114,8 +114,9 @@ void remplaceVariable (char **command)
                 }
                 //S'il y a d'autres variables pas séparées par des espaces
                 char** nextvar = copy(command, mot, mot+1);
-                char* varItem = strtok(*nextvar, ":");
-
+                //TODO JÉRÉMY : Sais-tu comment je peux accéder au mot? ici quand je mets *nextchar ça me dit ya un token même si yen a pas (avec for j in 1 2 3 ; do echo $i $j ; done)
+                //char* varItem = strtok(nextvar, ":");
+                char* varItem = NULL; // TODO: À enlever quand la ligne du dessus fonctionnera
                 //On a la forme $VAR:$VAR:$VAR...
                 if (varItem != NULL){
                     int i = 0;
@@ -153,7 +154,6 @@ void remplaceVariable (char **command)
         }
         mot++;
     }
-    return;
 }
 
 int execution (char** arrayInput, char** temp) {
@@ -236,7 +236,6 @@ bool instructionDone(char** command, int start){
 
 
 int runFor(char **command, int pos){
-    //TODO: Rajouter un autre while pour chaque instruction
     char *variable = command[1];
     int start;
     int i = 3;
@@ -256,13 +255,17 @@ int runFor(char **command, int pos){
         char** copie;
         while(!instructionDone(command,start)){
             end = findNextSplit(start, command, ";");
+            if (strcmp(command[end+1],"do")==0){
+                //On va chercher le prochain ; et on ajoute un pour le done
+                end = findNextSplit(end+2,command,";")+2;
+                copie = copy(command,start,end);
+                lireLigne(copie,0,end-start);
+            }
             copie = copy(command,start,end);
             remplaceVariable(copie);
 
-            char **parameters = getParameters (copie, 0, end-start);
+            valeur_retour = exec(copie,start,end);
 
-            valeur_retour = execution(parameters,parameters);
-            myFree(copie, end-start);
             if (valeur_retour < 0)
             {
                 printf("erreur numero %d dans for \n",valeur_retour);
@@ -272,6 +275,14 @@ int runFor(char **command, int pos){
         }
         i++;
     }
+    return valeur_retour;
+}
+
+int exec (char** copie, int start, int end){
+    int valeur_retour;
+    char **parameters = getParameters (copie, 0, end-start);
+    valeur_retour = execution(parameters,parameters);
+    myFree(copie, end-start);
     return valeur_retour;
 }
 
@@ -290,15 +301,13 @@ int runAssignation(char **command){
     return valeur_retour; //-1 si erreur
 }
 
-int lireLigne(char **command) {
+int lireLigne(char **command, int start, int end) {
     int i = 0;
     int valeur_retour;
     const char *pour = "for";
-    // const char *et = "&&";
-    //const char *ou = "||";
-    // //int mot = 0; //à enlever
+
     //Check if "for" is the command
-    if (strstr(command[0], pour)!= NULL) {
+    if (strstr(command[start], pour)!= NULL) {
         //Check if for is well made
         struct Return rtn = checkFor(command);
         if (rtn.format){
@@ -309,27 +318,20 @@ int lireLigne(char **command) {
             return -1;
         }
     }else{
-        bool passer = false;
-
         //Lit la ligne et remplace les $ par leur valeur
         remplaceVariable(command);
 
         //Vérifie si la ligne est une assignation
-        while(command[0][i]!= 0) {
-            if(command[0][i] == '='){//si assignation en premier
+        while(command[start][i]!= 0) {
+            if(command[start][i] == '='){//si assignation en premier
                 valeur_retour = runAssignation(command);
-                passer=true;
                 return valeur_retour;
             }
             i++;
         }
 
         //On a une commande
-        if (passer == false){
-            char **parameters = getParameters (command, 0, sizeof(command));
-            valeur_retour = execution(command,parameters);
-            return valeur_retour;
-        }
+        return exec(command,start,end);
     }
 
 }
@@ -389,7 +391,7 @@ void splitParts(char** command){
         end = getLastWord(command,start);
         char** psecond = copy(command, start, end);
 
-        int valeurRetour1 = lireLigne(pfirst);
+        int valeurRetour1 = lireLigne(pfirst,0,sizeof(pfirst));
         if (valeurRetour1 != 0 && res.type==0){
             myFree(pfirst, end-start);
             myFree(psecond, end-start);
@@ -403,7 +405,7 @@ void splitParts(char** command){
             return;
         }
 
-        int valeurRetour2 = lireLigne(psecond);
+        int valeurRetour2 = lireLigne(psecond,0,sizeof(psecond));
         if (valeurRetour2 != 0) {
             myFree(pfirst, end-start);
             myFree(psecond, end-start);
@@ -412,7 +414,7 @@ void splitParts(char** command){
 
 
     }else{
-        lireLigne(command);
+        lireLigne(command,0,sizeof(command));
     }
 
 }
