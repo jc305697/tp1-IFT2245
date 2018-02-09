@@ -34,7 +34,7 @@ void myFree(char **command, int length)
 
 char** copy(char **command,int start,int end) {
     int longueur = end - start +1;
-    char **copie = malloc(longueur * sizeof(char *));
+    char **copie = malloc(longueur*2 * sizeof(char *));
     int i = 0;
     for (int j = start; j < end; j++) {
         copie[i] = malloc((strlen(command[j]) + 1) * sizeof(char));
@@ -48,23 +48,34 @@ char** copy(char **command,int start,int end) {
 }
 
 char* read_input() {
-    //char* input =NULL;
-    char* input;
-    //size_t taille = 0;
-    input = (char *) malloc(200 * sizeof(char));
+    char* input =NULL;
+    //char* input;
+    size_t taille = 0;
+   // input = (char *) malloc(200 * sizeof(char));
 
     //Crédit G Praveen Kumar pour le scanf avec espacement
-    scanf(" %[^\n]s", input);
+    //scanf(" %[^\n]s", input);
 
-    // getline(&input,&taille,stdin);//TODO: remplacer scanf par getline
+     getline(&input,&taille,stdin);//TODO: remplacer scanf par getline
     //Sépare chaque partie du string
+    printf("input 1 = %s",input);
+    
+
+    input = strtok(input,"\n");
+    int i = 0;
+    /*while(input[i]!=0){
+    	printf("lettre = %c\n",input[i]);
+    	i++;
+    }*/
     char *split = strtok(input, " ");
     return split;
 }
 
 //Prend un pointeur et crée un array de pointeurs pour chaque mot
 char** parse_input(char *input) {
-    char **parsedArray = (char **) malloc(sizeof(char*)*BUFSIZ);
+    //char **parsedArray = (char **) malloc(sizeof(char*)*BUFSIZ);
+    char **parsedArray = (char **) malloc(sizeof(char*)*strlen(input));
+
     int i = 0;
     while (input != NULL) {
         parsedArray[i] = malloc(strlen(input) + 1);
@@ -79,13 +90,16 @@ char** parse_input(char *input) {
 int longueur = 0;
 
 char** getParameters(char** arrayInput, int start, int end){
-    if (longueur==0){
+    int longueur = 0;
+
         while(arrayInput[longueur]!= 0) {
             longueur = longueur + 1;
         }
-    }
 
+
+    //char **temp = (char **) malloc(sizeof(char*)*(BUFSIZ ));
     char **temp = (char **) malloc(sizeof(char*)*(BUFSIZ ));
+
     // char **temp = (char **) malloc(sizeof(char*)*(strlen(*arrayInput) +1));
     int k=0;
     for (int j = start; j<end;j++){
@@ -134,9 +148,22 @@ int execution (char** arrayInput, char** temp) {
     char cd[3] = "cd";
     int stat;
     //Commande particuliere
-    if( strcmp(arrayInput[0],cd) == 0){
+    int retour;
+    if( strcmp(arrayInput[0],cd) == 0) {
+
         //cd n'a qu'un seul argument
-        int retour = chdir(temp[1]);
+        int longueur1 = 0;
+        while (temp[longueur1] != 0){
+            longueur1++;
+        }
+
+        if (longueur1== 1) {
+            printf("HOME\n");
+            retour = chdir(getenv("HOME"));
+        }
+        else {
+         retour = chdir(temp[1]);
+    }
         if(retour == -1) {
             printf("numero erreur = %d",errno);
             printf("erreur 1 = %s \n",strerror(errno));
@@ -151,14 +178,28 @@ int execution (char** arrayInput, char** temp) {
             //child
             if (temp[0] != NULL){
                 //Pour ls et cat et compagnie
+
                 value_returned = execvp(arrayInput[0],temp);
-                exit(value_returned);
             }
         }else{
+            int stat;
             wait(&stat);
-            return stat;
+            if (!WIFEXITED(stat))
+                //si le child ne s'est pas terminer normalement
+                printf(" WIFSIGNALED = %d\n",WIFSIGNALED(stat));//true si child a ete terminer par un signal
+            if (WIFSIGNALED(stat))
+            {
+                printf("WTERMSIG = %d\n",WTERMSIG(stat));//print le numéro du signal qui a fait terminer le child
+            }
+            return -1;
         }
 
+        if (value_returned == -1) {
+            printf("test maude\n");
+            //TODO : Cette commande bug la quatrieme fois for i in 1 2 3 ; do ls ; done
+            printf("erreur 2 = %s\n",strerror(errno));
+        }
+        return value_returned;
     }
 }
 
@@ -358,36 +399,35 @@ int splitParts(char** command){
     }
 
     if (res.isNext){//si il y a un && ou un ||
-        int start = 0;
-        int end = res.pos;//position du &&
-        char** pfirst = copy(command, start, end);//copie avant le &&
+        if (res.type==0){//si c'est un &&
+            int start = 0;
+            int end = res.pos;//position du &&
+            char** pfirst = copy(command, start, end);//copie avant le &&
 
 
 
-        start = res.pos+1;
-        end = getLastWord(command,start);
-        char** psecond = copy(command, start, end);
+            start = res.pos+1;
+            end = getLastWord(command,start);
+            char** psecond = copy(command, start, end);
 
-        int valeurRetour1 = lireLigne(pfirst);
-        if (valeurRetour1 < 0 && res.type==0){
-            myFree(pfirst, end-start);
-            myFree(psecond, end-start);
-            return valeurRetour1; //je n'execute pas la 2e partie
+            int valeurRetour1 = lireLigne(pfirst);
+            if (valeurRetour1 < 0) {//si la premiere partie a une erreur
+                myFree(pfirst, end-start);
+                myFree(psecond, end-start);
+                return valeurRetour1; //je n'execute pas la 2e partie
+            }
+
+            if (getNextConcat(psecond,0).isNext){
+                splitParts(psecond);
+            }
+
+            int valeurRetour2 = lireLigne(psecond);
+            if (valeurRetour2 < 0) {
+                myFree(pfirst, end-start);
+                myFree(psecond, end-start);
+                return valeurRetour2;//je retourne la 2e partie
+            }
         }
-
-        if (getNextConcat(psecond,0).isNext){
-            splitParts(psecond);
-            return 0;
-        }
-
-        int valeurRetour2 = lireLigne(psecond);
-        if (valeurRetour2 < 0) {
-            myFree(pfirst, end-start);
-            myFree(psecond, end-start);
-            return valeurRetour2;//je retourne la 2e partie
-        }
-
-
     }else{
         lireLigne(command);
     }
@@ -401,13 +441,20 @@ int main(void) {
     printf("Mini-Shell > ");
     // char input[200];
     char* res = read_input();
+    printf("input = %s",res);
    // printf(" valeur de input = %s\n",res);
     while (strcmp(res, "exit") != 0) {
         char **command = parse_input(res);
+        int i = 0;
+        while (command[i]!=0){
+            i++;
+        }
+
+     //   command = copy(command,0,i-1);
         splitParts(command);
         //lireLigne(command);
-       //  free(command);
-       // free(res);
+       // myFree(command,i);
+       free(res);
         printf("\r\n Mini-Shell > ");
         res = read_input();
     }
@@ -415,3 +462,4 @@ int main(void) {
 
     exit(0);
 }
+
