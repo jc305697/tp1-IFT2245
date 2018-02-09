@@ -290,7 +290,7 @@ int exec (char** copie, int start, int end){
     int valeur_retour;
     char **parameters = getParameters (copie, 0, end-start);
     valeur_retour = execution(parameters,parameters);
-    myFree(copie, end-start);
+    //myFree(copie, end-start);free déjà via pfirst psecond?
     return valeur_retour;
 }
 
@@ -440,14 +440,15 @@ void splitParts(char** command){
         int end = res.pos;//position du &&
         char** pfirst = copy(command, start, end);//copie avant le &&
 
-        start = res.pos+1;
-        end = getLastWord(command,start);
-        char** psecond = copy(command, start, end);
+        int starts = res.pos+1;
+        int ends = getLastWord(command,starts);
+        char** psecond = copy(command, starts, ends);
 
-        int valeurRetour1 = lireLigne(pfirst,0,sizeof(pfirst));
+        //End toujours 1 de plus que le final
+        int valeurRetour1 = lireLigne(pfirst,0,end);
         if (valeurRetour1 != 0 && res.type==0){
             myFree(pfirst, end-start);
-            myFree(psecond, end-start);
+            myFree(psecond, ends-starts);
             return;
         }else if (valeurRetour1==0 && res.type==1){
             return;
@@ -458,10 +459,10 @@ void splitParts(char** command){
             return;
         }
 
-        int valeurRetour2 = lireLigne(psecond,0,sizeof(psecond));
+        int valeurRetour2 = lireLigne(psecond,0,ends-end-1);
         if (valeurRetour2 != 0) {
             myFree(pfirst, end-start);
-            myFree(psecond, end-start);
+            myFree(psecond, ends-starts);
             return;//je retourne la 2e partie
         }
 
