@@ -247,11 +247,23 @@ void remplaceVariable (char **command) {
 //Exécute l'appel via les commandes du path ou la commande spécifique cd
 int execution (char** arrayInput, char** temp) {
     char cd[3] = "cd";
+    int retour;
     if( strcmp(arrayInput[0],cd) == 0){
         //cd n'a qu'un seul argument
-        int retour = chdir(temp[1]);
+        int longeur1 =0;
+        while (temp[longeur1]!=0){
+            longeur1++;
+        }
+
+        if(longeur1==1){
+            //printf("HOME\n");
+            retour = chdir(getenv("HOME"));
+        }
+        else{
+         retour = chdir(temp[1]);
+        }
         if(retour == -1) {
-            printf("numero erreur = %d",errno);
+            printf("numero erreur = %d\n",errno);
             printf("erreur 1 = %s \n",strerror(errno));
         }
         return retour;
@@ -263,12 +275,6 @@ int execution (char** arrayInput, char** temp) {
         if (pid == 0){
             //child
             if (temp[0] != NULL){
-               /* printf("arrayInput[0]=%s\n",arrayInput[0]);
-                int iter=0;
-                while(temp[iter]!=0){
-                    printf("temp[%d]=%s\n",iter,temp[iter]);
-                    iter++;
-                }*/
 
                 value_returned = execvp(arrayInput[0],temp);
                 exit(value_returned);
@@ -333,13 +339,9 @@ bool instructionDone(char** command, int start){
 int exec (char** copie, int start, int end){
     int valeur_retour;
     char **parameters = getParameters (copie, 0, end-start);
-    int iter=0;
-   /* while(parameters[iter]!=0){
-        printf("parameters[%d]=%s\n",iter,parameters[iter]);
-        iter++;
-    }*/
+
     valeur_retour = execution(parameters,parameters);
-    //printf("valeur retour = %d\n",valeur_retour);
+
     return valeur_retour;
 }
 
@@ -384,11 +386,6 @@ int runFor(char **command, int pos){
             //Copie et exécute le for externe
             copie = copy(command,start,end);
             remplaceVariable(copie);
-          /*  int iter =0;
-            while(copie[iter]!=0){
-                printf("copie[%d]=%s\n",iter,copie[iter]);
-                iter++;
-            }*/
 
             valeur_retour = exec(copie,start,end);
 
@@ -456,11 +453,7 @@ int lireLigne(char **command, int start, int end) {
         }
 
         //On a une commande
-       /* int iter =0;
-        while(command[iter]!=0){
-            printf("command[%d]=%s\n",iter,command[iter]);
-            iter++;
-        }*/
+
         return exec(command,start,end);
     }
 
@@ -560,17 +553,11 @@ void splitParts(char** command){
     }
 
 }
-/*void setTest(void){
-    int overWrite =1;
-    setenv("MAN","man",overWrite);
-    setenv("CC","gcc",overWrite);
-    setenv("VERSION","--version",overWrite);
-    setenv("LS","ls",overWrite);
-}*/
+
 
 int main(void) {
     printf("Mini-Shell > ");
-    //setTest();
+
     char* res = read_input();
     while (strcmp(res, "exit") != 0) {
         //Parse l'entree par espace
