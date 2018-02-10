@@ -130,17 +130,15 @@ void remplaceVariable (char **command)
                 }
 
                 char* varItem = strtok(nextvar, ":");
+                char* temp = varItem;
+                varItem = strtok (NULL, ":");
                 //On a la forme $VAR:$VAR:$VAR...
-                char* nextVarItem = strtok(NULL,":");
-
-               // if (varItem != NULL){//s'il reste des string qui avait : comme separateur
-                if (nextVarItem != NULL){
+                if (varItem != NULL){//s'il reste des string qui avait : comme separateur
                     //int i = 0;
                     int j = 1;
                     char **tableauTemp = malloc((occurence + 1) * sizeof(char*));
                     int posTabTemp =0;
                     referenceOriginal = nextvar;
-                    int flag = 0;
                     //Tant que existe des token (donc des variables)
                     while (varItem != NULL) {
                         //Va chercher la valeur au mot i à la première lettre (évite le $)
@@ -160,15 +158,8 @@ void remplaceVariable (char **command)
                         // free(referenceOriginal); voir quand je peux free
                         //  free(valeur);
                         //i++;
-                        if (flag != 0){
-                            varItem = strtok (NULL, ":");
-                        }
-                        else{
-                            varItem = nextVarItem;
-                            flag = 1 ;
-                        }
+                        varItem = strtok (NULL, ":");
                     }
-                    tableauTemp[posTabTemp] = 0;
 
                     int i = 0;
                     char *stringConcatTemp;
@@ -189,7 +180,7 @@ void remplaceVariable (char **command)
                         //libere ancien espace memoire et donne le nouvel espace memoire
                         stringConcat =stringTemp;
 
-              //          free(stringConcatTemp);
+                        free(stringConcatTemp);
                         i++;
                     }
                     if ((tableauTemp[i]!=0 && tableauTemp[i+1]==0)){
@@ -456,7 +447,8 @@ void splitParts(char** command){
 
         //End toujours 1 de plus que le final
         int valeurRetour1 = lireLigne(pfirst,0,end);
-        if (valeurRetour1 != 0 && res.type==0){
+        //65280 is 255 in hexa, child exited normally
+        if (valeurRetour1 != 0 && valeurRetour1!= 65280 && res.type==0){
             myFree(pfirst, end-start);
             myFree(psecond, ends-starts);
             return;
@@ -484,18 +476,9 @@ void splitParts(char** command){
 
 }
 
-void setTest (void){
-    int overwrite = 1;
-    setenv("MAN","man",overwrite);
-    setenv("CC","gcc",overwrite);
-    setenv("VERSION","--version",overwrite);
-    setenv("LS","ls",overwrite);
-
-}
 int main(void) {
     printf("Mini-Shell > ");
     // char input[200];
-    setTest();
     char* res = read_input();
     // printf(" valeur de input = %s\n",res);
     while (strcmp(res, "exit") != 0) {
