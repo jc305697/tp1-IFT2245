@@ -132,6 +132,7 @@ void remplaceVariable (char **command)
                 char* varItem = strtok(nextvar, ":");
                 //On a la forme $VAR:$VAR:$VAR...
                 char* nextVarItem = strtok(NULL,":");
+
                // if (varItem != NULL){//s'il reste des string qui avait : comme separateur
                 if (nextVarItem != NULL){
                     //int i = 0;
@@ -139,6 +140,7 @@ void remplaceVariable (char **command)
                     char **tableauTemp = malloc((occurence + 1) * sizeof(char*));
                     int posTabTemp =0;
                     referenceOriginal = nextvar;
+                    int flag = 0;
                     //Tant que existe des token (donc des variables)
                     while (varItem != NULL) {
                         //Va chercher la valeur au mot i à la première lettre (évite le $)
@@ -158,8 +160,15 @@ void remplaceVariable (char **command)
                         // free(referenceOriginal); voir quand je peux free
                         //  free(valeur);
                         //i++;
-                        varItem = strtok (NULL, ":");
+                        if (flag != 0){
+                            varItem = strtok (NULL, ":");
+                        }
+                        else{
+                            varItem = nextVarItem;
+                            flag = 1 ;
+                        }
                     }
+                    tableauTemp[posTabTemp] = 0;
 
                     int i = 0;
                     char *stringConcatTemp;
@@ -180,7 +189,7 @@ void remplaceVariable (char **command)
                         //libere ancien espace memoire et donne le nouvel espace memoire
                         stringConcat =stringTemp;
 
-                        free(stringConcatTemp);
+              //          free(stringConcatTemp);
                         i++;
                     }
                     if ((tableauTemp[i]!=0 && tableauTemp[i+1]==0)){
@@ -475,9 +484,18 @@ void splitParts(char** command){
 
 }
 
+void setTest (void){
+    int overwrite = 1;
+    setenv("MAN","man",overwrite);
+    setenv("CC","gcc",overwrite);
+    setenv("VERSION","--version",overwrite);
+    setenv("LS","ls",overwrite);
+
+}
 int main(void) {
     printf("Mini-Shell > ");
     // char input[200];
+    setTest();
     char* res = read_input();
     // printf(" valeur de input = %s\n",res);
     while (strcmp(res, "exit") != 0) {
