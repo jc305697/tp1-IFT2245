@@ -131,7 +131,9 @@ void remplaceVariable (char **command)
 
                 char* varItem = strtok(nextvar, ":");
                 //On a la forme $VAR:$VAR:$VAR...
-                if (varItem != NULL){//s'il reste des string qui avait : comme separateur
+                char* nextVarItem = strtok(NULL,":");
+               // if (varItem != NULL){//s'il reste des string qui avait : comme separateur
+                if (nextVarItem != NULL){
                     //int i = 0;
                     int j = 1;
                     char **tableauTemp = malloc((occurence + 1) * sizeof(char*));
