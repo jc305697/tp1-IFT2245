@@ -117,7 +117,7 @@ void remplaceVariable (char **command)
                 //S'il y a d'autres variables pas séparées par des espaces
                 //char** nextvar = copy(command, mot, mot+1);//copie le mot
                 char  *nextvar = malloc((strlen(command[mot]) + 1) * sizeof(char) );
-                nextvar = strcpy(nextvar,command[mot]);
+                strcpy(nextvar,command[mot]);
                 //TODO JÉRÉMY : Sais-tu comment je peux accéder au mot? ici quand je mets *nextchar ça me dit ya un token même si yen a pas (avec for j in 1 2 3 ; do echo $i $j ; done)
 
                 int iterateur = 0;
@@ -130,7 +130,6 @@ void remplaceVariable (char **command)
                 }
 
                 char* varItem = strtok(nextvar, ":");
-                //char* varItem = NULL; // TODO: À enlever quand la ligne du dessus fonctionnera
                 //On a la forme $VAR:$VAR:$VAR...
                 if (varItem != NULL){//s'il reste des string qui avait : comme separateur
                     //int i = 0;
@@ -227,7 +226,7 @@ int execution (char** arrayInput, char** temp) {
         int stat;
         if (pid == 0){
             //child
-            if (temp[1] != NULL){
+            if (temp[0] != NULL){
                 //Pour ls et cat et compagnie
                 value_returned = execvp(arrayInput[0],temp);
                 exit(value_returned);
@@ -468,7 +467,8 @@ void splitParts(char** command){
 
 
     }else{
-        lireLigne(command,0,sizeof(command));
+        int end = getLastWord(command,0);
+        lireLigne(command,0,end);
     }
 
 }
