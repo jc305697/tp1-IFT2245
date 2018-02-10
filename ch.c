@@ -116,7 +116,7 @@ void remplaceVariable (char **command) {
                 }
                 //S'il y a d'autres variables pas séparées par des espaces
                 char  *nextvar = malloc((strlen(command[mot]) + 1) * sizeof(char) );
-                strcpy(nextvar,command[mot]);
+                nextvar = strcpy(nextvar,command[mot]);
                 //TODO JÉRÉMY : Sais-tu comment je peux accéder au mot? ici quand je mets *nextchar ça me dit ya un token même si yen a pas (avec for j in 1 2 3 ; do echo $i $j ; done)
 
                 int iterateur = 0;
@@ -129,15 +129,18 @@ void remplaceVariable (char **command) {
                 }
 
                 char* varItem = strtok(nextvar, ":");
-                char* temp = varItem;
-                varItem = strtok (NULL, ":");
+                /*char* temp = varItem;
+                varItem = strtok (NULL, ":");*/
+                char* nextVarItem = strtok(NULL,":");
                 //On a la forme $VAR:$VAR:$VAR...
-                if (varItem != NULL){//s'il reste des string qui avait : comme separateur
-                    //int i = 0;
+                //if (varItem != NULL){//s'il reste des string qui avait : comme separateur
+                if (nextVarItem != NULL){
+                //int i = 0;
                     int j = 1;
                     char **tableauTemp = malloc((occurence + 1) * sizeof(char*));
                     int posTabTemp =0;
                     referenceOriginal = nextvar;
+                    int flag = 0;
                     //Tant que existe des token (donc des variables)
                     while (varItem != NULL) {
                         //Va chercher la valeur au mot i à la première lettre (évite le $)
@@ -146,7 +149,7 @@ void remplaceVariable (char **command) {
                         // referenceOriginal = nextvar[i];
 
                         tableauTemp[posTabTemp] = valeur;
-                        posTabTemp ++;
+                        posTabTemp++;
                         //==============================================================================================
                         //TODO JÉRÉMY : PEUX-TU FIX CECI, JE SAIS PAS TROP OÙ LE COPIER..
                         //En ce moment VALEUR contient la vrai valeur et il faudrait le mettre dans un tableau temporaire
@@ -157,37 +160,70 @@ void remplaceVariable (char **command) {
                         // free(referenceOriginal); voir quand je peux free
                         //  free(valeur);
                         //i++;
-                        varItem = strtok (NULL, ":");
+                        if(flag!=0){
+                            varItem = strtok (NULL, ":");
+                        }
+                        else{
+                            varItem = nextVarItem;
+                            flag = 1;
+                        }
+
                     }
+                    tableauTemp[posTabTemp]=0;
 
                     int i = 0;
                     char *stringConcatTemp;
                     char * stringConcat = malloc((strlen(tableauTemp[0]) + 2 + strlen("")) * sizeof(char));
                     stringConcat[0] = '\0';
                     char *stringTemp;
+                    /*bool test1 = tableauTemp[i]!=0;
+                    bool test2;
+                    if(test1){
+                        test2 = tableauTemp[i+1]!=0;
+                    }*/
+
                     while (tableauTemp[i]!=0 && tableauTemp[i+1]!=0) {
+                        //printf("test1 = %d et test2 = %d\n",test1,test2);
+                        fflush(stdout);
                         stringConcatTemp = strcat(tableauTemp[i],":");
 
                         stringConcat = strcat(stringConcat,stringConcatTemp);
+                        //printf("stringConcat= %s au temps 1\n",stringConcat);
+                        fflush(stdout);
 
                         stringTemp = malloc((strlen(tableauTemp[i+1] + strlen(stringConcat) + 2)) * sizeof(char));
                         //prend plus d'espace memoire pour pouvoir concatener la prochaine string
                         stringTemp = strcpy(stringTemp,stringConcat);
+                        //printf("stringTemp = %s\n",stringTemp);
+                        fflush(stdout);
+
                         //copie la string actuelle dans le nouvel espace memoire
                         free(stringConcat);
                         //libere ancien espace memoire et donne le nouvel espace memoire
                         stringConcat =stringTemp;
+                        //printf("stringConcat = %s au temps 2\n",stringConcat);
+                        fflush(stdout);
 
-                        free(stringConcatTemp);
+                      //  free(stringConcatTemp);
                         i++;
+                      /*   test1 = tableauTemp[i]!=0;
+                        if(test1){
+                            test2 = tableauTemp[i+1]!=0;
+                        }*/
+
                     }
                     if ((tableauTemp[i]!=0 && tableauTemp[i+1]==0)){
                         stringConcat = strcat(stringConcat,tableauTemp[i]);
+                        //printf("stringConcat = %s au temps 3\n",stringConcat);
+                        fflush(stdout);
                         i++;
                     }
                     free(command[mot]);
                     command[mot] = stringConcat;
+                    //printf("commannd[mot] = %s\n",command[mot]);
                     free(referenceOriginal);
+                    //free(stringConcatTemp);
+
 
                 }else{
                     char *valeur = getenv(&command[mot][lettre + 1]);
@@ -227,6 +263,13 @@ int execution (char** arrayInput, char** temp) {
         if (pid == 0){
             //child
             if (temp[0] != NULL){
+               /* printf("arrayInput[0]=%s\n",arrayInput[0]);
+                int iter=0;
+                while(temp[iter]!=0){
+                    printf("temp[%d]=%s\n",iter,temp[iter]);
+                    iter++;
+                }*/
+
                 value_returned = execvp(arrayInput[0],temp);
                 exit(value_returned);
             }
@@ -290,7 +333,13 @@ bool instructionDone(char** command, int start){
 int exec (char** copie, int start, int end){
     int valeur_retour;
     char **parameters = getParameters (copie, 0, end-start);
+    int iter=0;
+   /* while(parameters[iter]!=0){
+        printf("parameters[%d]=%s\n",iter,parameters[iter]);
+        iter++;
+    }*/
     valeur_retour = execution(parameters,parameters);
+    //printf("valeur retour = %d\n",valeur_retour);
     return valeur_retour;
 }
 
@@ -335,6 +384,11 @@ int runFor(char **command, int pos){
             //Copie et exécute le for externe
             copie = copy(command,start,end);
             remplaceVariable(copie);
+          /*  int iter =0;
+            while(copie[iter]!=0){
+                printf("copie[%d]=%s\n",iter,copie[iter]);
+                iter++;
+            }*/
 
             valeur_retour = exec(copie,start,end);
 
@@ -402,6 +456,11 @@ int lireLigne(char **command, int start, int end) {
         }
 
         //On a une commande
+       /* int iter =0;
+        while(command[iter]!=0){
+            printf("command[%d]=%s\n",iter,command[iter]);
+            iter++;
+        }*/
         return exec(command,start,end);
     }
 
@@ -501,10 +560,17 @@ void splitParts(char** command){
     }
 
 }
-
+/*void setTest(void){
+    int overWrite =1;
+    setenv("MAN","man",overWrite);
+    setenv("CC","gcc",overWrite);
+    setenv("VERSION","--version",overWrite);
+    setenv("LS","ls",overWrite);
+}*/
 
 int main(void) {
     printf("Mini-Shell > ");
+    //setTest();
     char* res = read_input();
     while (strcmp(res, "exit") != 0) {
         //Parse l'entree par espace
