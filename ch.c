@@ -92,6 +92,7 @@ char** getParameters(char** arrayInput, int start, int end){
         temp[k] = arrayInput[j];
         k++;
     }
+    temp[k]=0;
 
     return temp;
 }
@@ -176,46 +177,51 @@ void remplaceVariable (char **command) {
                     char * stringConcat = malloc((strlen(tableauTemp[0]) + 2 + strlen("")) * sizeof(char));
                     stringConcat[0] = '\0';
                     char *stringTemp;
-                    /*bool test1 = tableauTemp[i]!=0;
+                    bool test1 = tableauTemp[i]!=0;
                     bool test2;
                     if(test1){
                         test2 = tableauTemp[i+1]!=0;
-                    }*/
+                    }
 
-                    while (tableauTemp[i]!=0 && tableauTemp[i+1]!=0) {
+                    //while (tableauTemp[i]!=0 && tableauTemp[i+1]!=0) {
+                    while (test1 && test2) {
+
                         //printf("test1 = %d et test2 = %d\n",test1,test2);
-                        fflush(stdout);
+                        //fflush(stdout);
+
                         stringConcatTemp = strcat(tableauTemp[i],":");
 
                         stringConcat = strcat(stringConcat,stringConcatTemp);
+
                         //printf("stringConcat= %s au temps 1\n",stringConcat);
-                        fflush(stdout);
+                        //fflush(stdout);
 
                         stringTemp = malloc((strlen(tableauTemp[i+1] + strlen(stringConcat) + 2)) * sizeof(char));
                         //prend plus d'espace memoire pour pouvoir concatener la prochaine string
                         stringTemp = strcpy(stringTemp,stringConcat);
+
                         //printf("stringTemp = %s\n",stringTemp);
-                        fflush(stdout);
+                        //fflush(stdout);
 
                         //copie la string actuelle dans le nouvel espace memoire
                         free(stringConcat);
                         //libere ancien espace memoire et donne le nouvel espace memoire
                         stringConcat =stringTemp;
                         //printf("stringConcat = %s au temps 2\n",stringConcat);
-                        fflush(stdout);
+                        //fflush(stdout);
 
                       //  free(stringConcatTemp);
                         i++;
-                      /*   test1 = tableauTemp[i]!=0;
+                        test1 = tableauTemp[i]!=0;
                         if(test1){
                             test2 = tableauTemp[i+1]!=0;
-                        }*/
+                        }
 
-                    }
+                    } //free(stringConcatTemp);
                     if ((tableauTemp[i]!=0 && tableauTemp[i+1]==0)){
                         stringConcat = strcat(stringConcat,tableauTemp[i]);
-                        //printf("stringConcat = %s au temps 3\n",stringConcat);
-                        fflush(stdout);
+                      //  printf("stringConcat = %s au temps 3\n",stringConcat);
+                        //fflush(stdout);
                         i++;
                     }
                     free(command[mot]);
@@ -237,11 +243,13 @@ void remplaceVariable (char **command) {
                     // pointe vers la string avec la valeur mis à jour
                 }
 
+
             }
             lettre++;
         }
         mot++;
     }
+
 }
 
 //Exécute l'appel via les commandes du path ou la commande spécifique cd
@@ -273,15 +281,25 @@ int execution (char** arrayInput, char** temp) {
         pid_t pid = fork();
         int stat;
         if (pid == 0){
+           /* int iter =0;
+            while (temp[iter]!=0){
+                printf("temp[%d]=%s\n",iter,temp[iter]);
+                iter++;
+            }*/
             //child
             if (temp[0] != NULL){
 
                 value_returned = execvp(arrayInput[0],temp);
+               //printf("value_returned=%d\n",value_returned);
+               // fflush(stdout);
                 exit(value_returned);
             }
         }else{
             //Le parent retourne le code de l'enfant pour valider les erreurs
             wait(&stat);
+
+          //  printf("stat=%d\n",stat);
+            //fflush(stdout);
             return stat;
         }
 
@@ -339,7 +357,11 @@ bool instructionDone(char** command, int start){
 int exec (char** copie, int start, int end){
     int valeur_retour;
     char **parameters = getParameters (copie, 0, end-start);
-
+   /* int iter =0;
+    while (parameters[iter]!=0){
+        printf("parameters[%d]=%s\n",iter,parameters[iter]);
+        iter++;
+    }*/
     valeur_retour = execution(parameters,parameters);
 
     return valeur_retour;
@@ -413,6 +435,7 @@ int runAssignation(char **command){
     //Valeur à donner à la variable
     char* valeur = strtok(NULL,"=");
     int overwrite = 1;
+    printf("%s=%s\n",var_name,valeur);
 
     //Assignation de la valeur dans l'environnement
     valeur_retour = setenv(var_name,valeur,overwrite);
@@ -554,13 +577,20 @@ void splitParts(char** command){
 
 }
 
+/*void setTest(void){
+   int overWrite =1;
+    setenv("MAN","man",overWrite);
+    setenv("CC","gcc",overWrite);
+    setenv("LS","ls",overWrite);
+    setenv("VERSION","--version",overWrite);
+}*/
 
 int main(void) {
     printf("Mini-Shell > ");
-
     char* res = read_input();
     while (strcmp(res, "exit") != 0) {
         //Parse l'entree par espace
+        //setTest();
         char **command = parse_input(res);
         //Split l'input selon les && et ||
         splitParts(command);
