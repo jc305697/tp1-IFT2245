@@ -61,7 +61,8 @@ char* read_input() {
 //Loop dans les tokens du input et crée un array de pointeurs
 char** parse_input(char *input) {
     //TODO: Changer le BUFSIZ
-    char **parsedArray = (char **) malloc(sizeof(char*)*BUFSIZ);
+   char **parsedArray = (char **) malloc(sizeof(char*)*BUFSIZ);
+    //char **parsedArray = (char **) malloc(sizeof(char*)*(strlen(input)+2));
     int i = 0;
     while (input != NULL) {
         //Alloue de la mémoire pour les mots de la phrase
@@ -72,6 +73,7 @@ char** parse_input(char *input) {
         input = getNextValue(input);
         i++;
     }
+    parsedArray[i]= 0;
     return parsedArray;
 }
 
@@ -87,6 +89,7 @@ char** getParameters(char** arrayInput, int start, int end){
     }
     //TODO: Changer le bufsiz
     char **temp = (char **) malloc(sizeof(char*)*(BUFSIZ ));
+    //char **temp = (char **) malloc(sizeof(char*)*(longueur+2));
     int k=0;
     for (int j = start; j<end;j++){
         temp[k] = arrayInput[j];
@@ -123,20 +126,21 @@ void remplaceVariable (char **command) {
                 int iterateur = 0;
                 int occurence = 0;
                 while (nextvar[iterateur] != 0){
-                    if (nextvar[iterateur] == ':'){
+                    if (nextvar[iterateur] == ':') {
                         occurence = occurence + 2;
-                    }
+                    } //je veux une borne superieure sur le nombre d'elements
+
                     iterateur++;
                 }
 
                 char* varItem = strtok(nextvar, ":");
-                /*char* temp = varItem;
-                varItem = strtok (NULL, ":");*/
+
                 char* nextVarItem = strtok(NULL,":");
                 //On a la forme $VAR:$VAR:$VAR...
-                //if (varItem != NULL){//s'il reste des string qui avait : comme separateur
+                //s'il reste des string qui avait : comme separateur
                 if (nextVarItem != NULL){
-                //int i = 0;
+                    //le nextVarItem = NULL si il y a pas de : dans l'input
+
                     int j = 1;
                     char **tableauTemp = malloc((occurence + 1) * sizeof(char*));
                     int posTabTemp =0;
@@ -144,38 +148,34 @@ void remplaceVariable (char **command) {
                     int flag = 0;
                     //Tant que existe des token (donc des variables)
                     while (varItem != NULL) {
-                        //Va chercher la valeur au mot i à la première lettre (évite le $)
-                        //   char *valeur = getenv(&nextvar[i][j]);//&nextvar[i][j] est le pointeur vers la string de la variable
+                        //va chercher la valeur de la string à partir de
+                        //la position 1 pour enlever le $
                         char *valeur = getenv(&varItem[j]);
                         // referenceOriginal = nextvar[i];
 
                         tableauTemp[posTabTemp] = valeur;
                         posTabTemp++;
-                        //==============================================================================================
-                        //TODO JÉRÉMY : PEUX-TU FIX CECI, JE SAIS PAS TROP OÙ LE COPIER..
-                        //En ce moment VALEUR contient la vrai valeur et il faudrait le mettre dans un tableau temporaire
-                        //Et seulement à la fin utiliser strconcat pour tout remettre ensemble sous format var:var:var
-                        //==============================================================================================
 
-                        //  strcpy(&copie[j], valeur);
-                        // free(referenceOriginal); voir quand je peux free
-                        //  free(valeur);
-                        //i++;
+
                         if(flag!=0){
                             varItem = strtok (NULL, ":");
                         }
-                        else{
+                        else{//si je passe pour la premiere fois
                             varItem = nextVarItem;
                             flag = 1;
                         }
 
                     }
                     tableauTemp[posTabTemp]=0;
+                    //je veux savoir quand j'atteint la fin du tableau
 
                     int i = 0;
                     char *stringConcatTemp;
-                    char * stringConcat = malloc((strlen(tableauTemp[0]) + 2 + strlen("")) * sizeof(char));
-                    stringConcat[0] = '\0';
+                    size_t longTab = strlen(tableauTemp[0]) + 2;
+            char * stringConcat = malloc((longTab + strlen(""))* sizeof(char));
+                    //je dois avoir assez d'espace pour
+                    // la copie de stringConcatTemp
+                    stringConcat[0] = '\0';//contient la string vide au debut
                     char *stringTemp;
                     bool test1 = tableauTemp[i]!=0;
                     bool test2;
@@ -185,8 +185,9 @@ void remplaceVariable (char **command) {
 
                     //while (tableauTemp[i]!=0 && tableauTemp[i+1]!=0) {
                     while (test1 && test2) {
+                        longTab = strlen(tableauTemp[i])+1;
 
-                        char * copie1 = malloc((strlen(tableauTemp[i])+1)* sizeof(char) + sizeof(char*));
+             char * copie1 = malloc(longTab* sizeof(char) + sizeof(char*));
                         copie1 = strcpy(copie1,tableauTemp[i]);
 
 
@@ -194,20 +195,21 @@ void remplaceVariable (char **command) {
 
                         stringConcat = strcat(stringConcat,stringConcatTemp);
 
+                       longTab=strlen(tableauTemp[i+1]) + strlen(stringConcat);
 
-
-                        stringTemp = malloc((strlen(tableauTemp[i+1] + strlen(stringConcat) + 2)) * sizeof(char));
-                        //prend plus d'espace memoire pour pouvoir concatener la prochaine string
+                        stringTemp = malloc((longTab + 2) * sizeof(char));
+                        //prend plus d'espace memoire pour
+                        // pouvoir concatener la prochaine string
                         stringTemp = strcpy(stringTemp,stringConcat);
 
 
-
-                        //copie la string actuelle dans le nouvel espace memoire
+                        //copie la string actuelle
+                        // dans le nouvel espace memoire
                         free(stringConcat);
-                        //libere ancien espace memoire et donne le nouvel espace memoire
+                        //libere ancien espace memoire et donne le nouvel
+                        // espace memoire
                         stringConcat =stringTemp;
 
-                      //  free(stringConcatTemp);
                         i++;
 
                         free(copie1);
@@ -216,7 +218,7 @@ void remplaceVariable (char **command) {
                             test2 = tableauTemp[i+1]!=0;
                         }
 
-                    } //free(stringConcatTemp);
+                    }
                     if ((tableauTemp[i]!=0 && tableauTemp[i+1]==0)){
                         stringConcat = strcat(stringConcat,tableauTemp[i]);
                         i++;
@@ -224,18 +226,19 @@ void remplaceVariable (char **command) {
                     free(command[mot]);
                     command[mot] = stringConcat;
                     free(referenceOriginal);
-                    //free(stringConcatTemp);
+
                     int longueur1 =0;
 
                     while (tableauTemp[longueur1]!=0){
                         longueur1++;
                     }
-                    //myFree(tableauTemp,longueur1);
+
 
 
                 }else{
                     char *valeur = getenv(&command[mot][lettre + 1]);
-                    //obtient la valeur de ce que se trouve après $ (va jusqu'à la fin de command[mot])
+//obtient la valeur de ce que se trouve après $
+// (va jusqu'à la fin de command[mot])
                     referenceOriginal = command[mot];
 
                     command[mot] = strcpy(&copie[lettre], valeur);
@@ -488,6 +491,12 @@ struct concat getNextConcat(char** command, int start){
     const char *et = "&&";
     const char *ou = "||";
     int mot = start;
+    /*int iter =0;
+    while (command[iter]!=0){
+        printf("command[%d]=%s\n",iter,command[iter]);
+        iter++;
+    }
+    printf("iter=%d\n",iter);*/
     while (command[mot] != NULL){
         if (strstr(command[mot],et) != NULL){
             struct concat ct = {true, 0, mot};
@@ -578,11 +587,18 @@ int main(void) {
     char* res = read_input();
     while (strcmp(res, "exit") != 0) {
         //Parse l'entree par espace
-        char **command = parse_input(res);
-        //Split l'input selon les && et ||
-        splitParts(command);
-        printf("\r\n Mini-Shell > ");
-        res = read_input();
+        if(strcmp(res,"")!=0){
+            char **command = parse_input(res);
+            //Split l'input selon les && et ||
+            splitParts(command);
+            printf("\r\n Mini-Shell > ");
+            res = read_input();
+        } else{
+            printf("\r\n Mini-Shell > ");
+            //free(res);
+            res = read_input();
+        }
+
     }
     fprintf(stdout, "Bye!\n");
 
