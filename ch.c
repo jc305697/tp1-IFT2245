@@ -60,9 +60,7 @@ char* read_input() {
 
 //Loop dans les tokens du input et crée un array de pointeurs
 char** parse_input(char *input) {
-    //TODO: Changer le BUFSIZ
     char **parsedArray = (char **) malloc(sizeof(char*)*BUFSIZ);
-    //char **parsedArray = (char **) malloc(sizeof(char*)*(strlen(input)+2));
     int i = 0;
     while (input != NULL) {
         //Alloue de la mémoire pour les mots de la phrase
@@ -87,7 +85,6 @@ char** getParameters(char** arrayInput, int start, int end){
         }
     }
     char **temp = (char **) malloc(sizeof(char*)*(BUFSIZ ));
-    //char **temp = (char **) malloc(sizeof(char*)*(longueur+2));
     int k=0;
     for (int j = start; j<end;j++){
         temp[k] = arrayInput[j];
@@ -256,7 +253,6 @@ int execution (char** arrayInput, char** temp) {
         }
 
         if(longeur1==1){
-            //printf("HOME\n");
             retour = chdir(getenv("HOME"));
         }
         else{
@@ -278,16 +274,11 @@ int execution (char** arrayInput, char** temp) {
             if (temp[0] != NULL){
 
                 value_returned = execvp(arrayInput[0],temp);
-                //printf("value_returned=%d\n",value_returned);
-                // fflush(stdout);
                 exit(value_returned);
             }
         }else{
             //Le parent retourne le code de l'enfant pour valider les erreurs
             wait(&stat);
-
-            //  printf("stat=%d\n",stat);
-            //fflush(stdout);
             return stat;
         }
 
@@ -478,12 +469,6 @@ struct concat getNextConcat(char** command, int start){
     const char *et = "&&";
     const char *ou = "||";
     int mot = start;
-    /*int iter =0;
-    while (command[iter]!=0){
-        printf("command[%d]=%s\n",iter,command[iter]);
-        iter++;
-    }
-    printf("iter=%d\n",iter);*/
     while (command[mot] != NULL){
         if (strstr(command[mot],et) != NULL){
             struct concat ct = {true, 0, mot};
